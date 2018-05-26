@@ -397,7 +397,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         dockerfile="centos-httpd.dockerfile"
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -438,7 +438,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f tests/{dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -460,283 +460,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7011_centos_httpd_socket_notify(self):
-        """ WHEN using an image for a systemd-enabled CentOS 7, 
-            THEN we can create an image with an Apache HTTP service 
-                 being installed and enabled.
-            WHEN we start the image as a docker container
-            THEN we can download the root html showing 'OK'
-            and in the systemctl.debug.log we can see NOTIFY_SOCKET
-            messages with Apache sending a READY and MAINPID value."""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        testname=self.testname()
-        testdir = self.testdir(testname)
-        testport=self.testport()
-        images = IMAGES
-        image = self.local_image(CENTOS)
-        systemctl_py = _systemctl_py
-        logg.info("%s:%s %s", testname, testport, image)
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl enable httpd"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
-        sh____(cmd.format(**locals()))
-        #
-        ## commit_container = "docker commit -c 'CMD [\"/usr/bin/systemctl\",\"init\",\"-vv\"]'  {testname} {images}:{testname}"
-        ## sh____(commit_container.format(**locals()))
-        ## stop_container = "docker rm --force {testname}"
-        ## sx____(stop_container.format(**locals()))
-        ## start_container = "docker run --detach --name {testname} {images}:{testname} sleep 200"
-        ## sh____(start_container.format(**locals()))
-        ## time.sleep(3)
-        #
-        container = self.ip_container(testname)
-        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start httpd"
-        sh____(cmd.format(**locals()))
-        # THEN
-        time.sleep(5)
-        cmd = "wget -O {testdir}/result.txt http://{container}:80"
-        sh____(cmd.format(**locals()))
-        cmd = "grep OK {testdir}/result.txt"
-        sh____(cmd.format(**locals()))
-        # STOP
-        cmd = "docker exec {testname} systemctl status httpd"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop httpd"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl status httpd"
-        sx____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
-        sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        # CHECK
-        self.assertEqual(len(greps(open(testdir+"/systemctl.debug.log"), " ERROR ")), 0)
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "use NOTIFY_SOCKET="))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "read_notify.*READY=1.*MAINPID="))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "notify start done"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "stop '/bin/kill' '-WINCH'"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait [$]NOTIFY_SOCKET"))
-        self.assertTrue(greps(open(testdir+"/systemctl.debug.log"), "wait for PID .* is done"))
-        self.rm_testdir()
-    def test_7012_centos_elasticsearch(self):
-        """ WHEN we can setup a specific ElasticSearch version 
-                 as being downloaded from the company.
-            Without a special startup.sh script or container-cmd 
-            one can just start the image and in the container
-            expecting that the service is started. Therefore,
-            WHEN we start the image as a docker container
-            THEN we can see the ok-status from elastic."""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
-        filename = "elasticsearch-1.7.3.noarch.rpm"
-        into_dir = "Software/ElasticSearch"
-        download(base_url, filename, into_dir)
-        self.assertTrue(greps(os.listdir("Software/ElasticSearch"), filename))
-        #
-        testname=self.testname()
-        testdir = self.testdir(testname)
-        testport=self.testport()
-        images = IMAGES
-        image = self.local_image(CENTOS)
-        systemctl_py = _systemctl_py
-        logg.info("%s:%s %s", testname, testport, image)
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y java" # required
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y which" # TODO: missing requirement of elasticsearch
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp Software/ElasticSearch {testname}:/srv/"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'yum install -y /srv/ElasticSearch/*.rpm'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl enable elasticsearch"
-        sh____(cmd.format(**locals()))
-        #
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name {testname} {images}:{testname} sleep 200"
-        sh____(cmd.format(**locals()))
-        time.sleep(3)
-        #
-        container = self.ip_container(testname)
-        logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
-        sh____(cmd.format(**locals()))
-        # THEN
-        testdir = self.testdir(testname)
-        cmd = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
-        sh____(cmd.format(**locals()))
-        cmd = "grep 'You Know, for Search' {testdir}/result.txt"
-        sh____(cmd.format(**locals()))
-        # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        # CHECK
-        systemctl_log = open(testdir+"/systemctl.log").read()
-        self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
-        self.assertTrue(greps(systemctl_log, "simple start done PID"))
-        self.assertTrue(greps(systemctl_log, "stop kill PID"))
-        self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
-        #
-        cmd = "docker rmi {images}:{testname}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
-    def test_7013_centos_lamp_stack(self):
-        """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        testname=self.testname()
-        testdir = self.testdir(testname)
-        testport=self.testport()
-        images = IMAGES
-        image = self.local_image(CENTOS)
-        systemctl_py = _systemctl_py
-        logg.info("%s:%s %s", testname, testport, image)
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y epel-release"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum repolist"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin"
-        sh____(cmd.format(**locals()))
-        #
-        WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
-        INC_CONF="/etc/phpMyAdmin/config.inc.php"
-        INDEX_PHP="/var/www/html/index.php"
-        cmd = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start mariadb -vvv"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
-        sh____(cmd.format(**locals()))
-        text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
-        cmd = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start httpd"
-        sh____(cmd.format(**locals()))
-        #
-        container = self.ip_container(testname)
-        # THEN
-        time.sleep(5)
-        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        sh____(cmd.format(**locals()))
-        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
-        sh____(cmd.format(**locals()))
-        # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        #
-        self.rm_testdir()
-    def test_7014_opensuse_lamp_stack(self):
-        """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        testname=self.testname()
-        testdir = self.testdir(testname)
-        testport=self.testport()
-        images = IMAGES
-        image = self.local_image(OPENSUSE)
-        python_base = os.path.basename(_python)
-        systemctl_py = _systemctl_py
-        logg.info("%s:%s %s", testname, testport, image)
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} zypper install -r oss -y {python_base}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} zypper install -r oss -y apache2 apache2-utils mariadb-server mariadb-tools php5 phpMyAdmin"
-        sh____(cmd.format(**locals()))
-        #
-        WEB_CONF="/etc/apache2/conf.d/phpMyAdmin.conf"
-        INC_CONF="/etc/phpMyAdmin/config.inc.php"
-        INDEX_PHP="/srv/www/htdocs/index.php"
-        cmd = "docker exec {testname} bash -c 'echo \"<?php phpinfo(); ?>\" > {INDEX_PHP}'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sed -i 's|ip 127.0.0.1|ip 172.0.0.0/8|' {WEB_CONF}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start mysql -vvv"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} mysqladmin -uroot password 'N0.secret'"
-        sh____(cmd.format(**locals()))
-        text_file(os_path(testdir,"testuser.sql"), "CREATE USER testuser_OK IDENTIFIED BY 'Testuser.OK'")
-        cmd = "docker cp {testdir}/testuser.sql {testname}:/srv/testuser.sql" 
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'cat /srv/testuser.sql | mysql -uroot -pN0.secret'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sed -i -e \"/'user'/s|=.*;|='testuser_OK';|\" {INC_CONF}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} sed -i -e \"/'password'/s|=.*;|='Testuser.OK';|\" {INC_CONF}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start apache2"
-        sh____(cmd.format(**locals()))
-        #
-        container = self.ip_container(testname)
-        # THEN
-        time.sleep(5)
-        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
-        sh____(cmd.format(**locals()))
-        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
-        sh____(cmd.format(**locals()))
-        # CLEAN
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        #
-        self.rm_testdir()
-    def test_7020_ubuntu_apache2_with_saved_container(self):
+    def test_7020_ubuntu_apache2(self):
         """ WHEN using a systemd enabled Ubuntu as the base image
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -796,198 +520,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    # @unittest.expectedFailure
-    def test_8001_issue_1_start_mariadb_centos_7_0(self):
-        """ issue 1: mariadb on centos 7.0 does not start"""
-        # this was based on the expectation that "yum install mariadb" would allow
-        # for a "systemctl start mysql" which in fact it doesn't. Double-checking
-        # with "yum install mariadb-server" and "systemctl start mariadb" shows
-        # that mariadb's unit file is buggy, because it does not specify a kill
-        # signal that it's mysqld_safe controller does not ignore.
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        testname = self.testname()
-        testdir = self.testdir()
-        # image= "centos:centos7.0.1406" # <<<< can not yum-install mariadb-server ?
-        # image= "centos:centos7.1.1503"
-        image = self.local_image(CENTOS)
-        systemctl_py = _systemctl_py
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        # mariadb has a TimeoutSec=300 in the unit config:
-        cmd = "docker run --detach --name={testname} {image} sleep 400"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y mariadb"
-        sh____(cmd.format(**locals()))
-        if False:
-            # expected in bug report but that one can not work:
-            cmd = "docker exec {testname} systemctl enable mysql"
-            sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl --version"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl list-unit-files --type=service"
-        sh____(cmd.format(**locals()))
-        out = output(cmd.format(**locals()))
-        self.assertFalse(greps(out,"mysqld"))
-        #
-        cmd = "docker exec {testname} yum install -y mariadb-server"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl list-unit-files --type=service"
-        sh____(cmd.format(**locals()))
-        out = output(cmd.format(**locals()))
-        self.assertTrue(greps(out,"mariadb.service"))
-        #
-        cmd = "docker exec {testname} systemctl start mariadb -vv"
-        sh____(cmd.format(**locals()))
-        #
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
-        top = output(top_container.format(**locals()))
-        logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "mysqld "))
-        had_mysqld_safe = greps(top, "mysqld_safe ")
-        #
-        # NOTE: mariadb-5.5.52's mysqld_safe controller does ignore systemctl kill
-        # but after a TimeoutSec=300 the 'systemctl kill' will send a SIGKILL to it
-        # which leaves the mysqld to be still running -> this is an upstream error.
-        cmd = "docker exec {testname} systemctl stop mariadb -vv"
-        sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
-        top = output(top_container.format(**locals()))
-        logg.info("\n>>>\n%s", top)
-        # self.assertFalse(greps(top, "mysqld "))
-        if greps(top, "mysqld ") and had_mysqld_safe:
-            logg.critical("mysqld still running => this is an uptream error!")
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
-    def test_8002_issue_2_start_rsyslog_centos7(self):
-        """ issue 2: rsyslog on centos 7 does not start"""
-        # this was based on a ";Requires=xy" line in the unit file
-        # but our unit parser did not regard ";" as starting a comment
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        testname = self.testname()
-        testdir = self.testdir()
-        image= self.local_image(CENTOS)
-        systemctl_py = _systemctl_py
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 50"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y rsyslog"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl --version"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl list-unit-files --type=service"
-        sh____(cmd.format(**locals()))
-        out = output(cmd.format(**locals()))
-        self.assertTrue(greps(out,"rsyslog.service.*enabled"))
-        #
-        cmd = "docker exec {testname} systemctl start rsyslog -vv"
-        sh____(cmd.format(**locals()))
-        #
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
-        top = output(top_container.format(**locals()))
-        logg.info("\n>>>\n%s", top)
-        self.assertTrue(greps(top, "/usr/sbin/rsyslog"))
-        #
-        cmd = "docker exec {testname} systemctl stop rsyslog -vv"
-        sh____(cmd.format(**locals()))
-        top_container = "docker exec {testname} ps -eo pid,ppid,args"
-        top = output(top_container.format(**locals()))
-        logg.info("\n>>>\n%s", top)
-        self.assertFalse(greps(top, "/usr/sbin/rsyslog"))
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        self.rm_testdir()
-    def test_8011_centos_httpd_socket_notify(self):
-        """ start/restart behaviour if a httpd has failed - issue #11 """
-        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        testname=self.testname()
-        testdir = self.testdir(testname)
-        testport=self.testport()
-        images = IMAGES
-        image = self.local_image(CENTOS)
-        systemctl_py = _systemctl_py
-        logg.info("%s:%s %s", testname, testport, image)
-        #
-        cmd = "docker rm --force {testname}"
-        sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 600"
-        sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} yum install -y httpd httpd-tools"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl enable httpd"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
-        sh____(cmd.format(**locals()))
-        #
-        container = self.ip_container(testname)
-        cmd = "docker exec {testname} touch /var/log/systemctl.debug.log"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start httpd"
-        sh____(cmd.format(**locals()))
-        # THEN
-        time.sleep(5)
-        cmd = "wget -O {testdir}/result.txt http://{container}:80"
-        sh____(cmd.format(**locals()))
-        cmd = "grep OK {testdir}/result.txt"
-        sh____(cmd.format(**locals()))
-        # STOP
-        cmd = "docker exec {testname} systemctl status httpd"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop httpd"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl status httpd"
-        #
-        # CRASH
-        cmd = "docker exec {testname} bash -c 'cp /etc/httpd/conf/httpd.conf /etc/httpd/conf/httpd.conf.orig'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'echo foo > /etc/httpd/conf/httpd.conf'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start httpd"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertNotEqual(end, 0) # start failed
-        cmd = "docker exec {testname} systemctl status httpd"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertNotEqual(end, 0)
-        cmd = "docker exec {testname} systemctl restart httpd"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertNotEqual(end, 0) # restart failed
-        #
-        cmd = "docker exec {testname} bash -c 'cat /etc/httpd/conf/httpd.conf.orig > /etc/httpd/conf/httpd.conf'"
-        sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl restart httpd"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0) # restart ok
-        cmd = "docker exec {testname} systemctl stop httpd"
-        out, end = output2(cmd.format(**locals()))
-        logg.info(" %s =>%s\n%s", cmd, end, out)
-        self.assertEqual(end, 0) # down
-        cmd = "docker exec {testname} systemctl status httpd"
-        sx____(cmd.format(**locals()))
-        #
-        cmd = "docker cp {testname}:/var/log/systemctl.debug.log {testdir}/systemctl.debug.log"
-        sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
-        sh____(cmd.format(**locals()))
-        #
-        self.rm_testdir()
     def test_9000_ansible_test(self):
         """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1012,9 +544,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ download the software parts (will be done just once) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        sh____("cd tests && ansible-playbook download-jenkins.yml -vv")
-        sh____("cd tests && ansible-playbook download-selenium.yml -vv")
-        sh____("cd tests && ansible-playbook download-firefox.yml -vv")
+        sh____("ansible-playbook download-jenkins.yml -vv")
+        sh____("ansible-playbook download-selenium.yml -vv")
+        sh____("ansible-playbook download-firefox.yml -vv")
         # CHECK
         self.assertTrue(greps(os.listdir("Software/Jenkins"), "^jenkins.*[.]rpm"))
         self.assertTrue(greps(os.listdir("Software/Selenium"), "^selenium-.*[.]tar.gz"))
@@ -1024,8 +556,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ bring up the build-step deployment containers """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        drop_old_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
-        make_new_containers = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml up -d"
+        drop_old_containers = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml down"
+        make_new_containers = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml up -d"
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
         # CHECK
@@ -1037,23 +569,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = "test_9003"
         # WHEN environment is prepared
-        make_files_dir = "test -d tests/files || mkdir tests/files"
-        make_script_link = "cd tests/files && ln -sf ../../files/docker"
-        sh____(make_files_dir)
-        sh____(make_script_link)
         make_logfile_1 = "docker exec testingsystemctl1_serversystem_1 bash -c 'touch /var/log/systemctl.log'"
         make_logfile_2 = "docker exec testingsystemctl1_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'"
         sh____(make_logfile_1)
         sh____(make_logfile_2)
         # THEN ready to run the deployment playbook
-        inventory = "tests/docker-build-compose.ini"
-        playbooks = "tests/docker-build-playbook.yml"
+        inventory = "docker-build-compose.ini"
+        playbooks = "docker-build-playbook.yml"
         variables = "-e LOCAL=yes -e jenkins_prefix=/buildserver"
         ansible = "ansible-playbook -i {inventory} {variables} {playbooks} -vv"
         sh____(ansible.format(**locals()))
-        # CLEAN
-        drop_files_dir = "rm tests/files/docker"
-        sh____(drop_files_dir)
         #
         # CHECK
         tmp = self.testdir(testname)
@@ -1078,8 +603,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # stop the containers but keep them around
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        inventory = "tests/docker-build-compose.ini"
-        playbooks = "tests/docker-build-stop.yml"
+        inventory = "docker-build-compose.ini"
+        playbooks = "docker-build-stop.yml"
         variables = "-e LOCAL=yes"
         ansible = "ansible-playbook -i {inventory} {variables} {playbooks} -vv"
         sh____(ansible.format(**locals()))
@@ -1100,9 +625,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
-        drop_old_containers = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
-        make_new_containers = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml up -d"
+        drop_old_build_step = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml down"
+        drop_old_containers = "docker-compose -p testingsystemctl2 -f docker-start-compose.yml down"
+        make_new_containers = "docker-compose -p testingsystemctl2 -f docker-start-compose.yml up -d"
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
@@ -1116,14 +641,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ unlock jenkins as a post-build config-example using selenium-server """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        inventory = "tests/docker-start-compose.ini"
-        playbooks = "tests/docker-start-playbook.yml"
+        inventory = "docker-start-compose.ini"
+        playbooks = "docker-start-playbook.yml"
         variables = "-e LOCAL=yes -e j_username=installs -e j_password=installs.11"
         vartarget = "-e j_url=http://serversystem:8080/buildserver"
         ansible = "ansible-playbook -i {inventory} {variables} {vartarget} {playbooks} -vv"
         sh____(ansible.format(**locals()))
         # CHECK
-        test_screenshot = "ls -l tests/*.png"
+        test_screenshot = "ls -l *.png"
         sh____(test_screenshot)
     def test_9007_ansible_check_jenkins_login(self):
         """ check jenkins runs unlocked as a testcase result """
@@ -1141,8 +666,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         time.sleep(3)
-        drop_old_build_step = "docker-compose -p testingsystemctl1 -f tests/docker-build-compose.yml down"
-        drop_old_start_step = "docker-compose -p testingsystemctl2 -f tests/docker-start-compose.yml down"
+        drop_old_build_step = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml down"
+        drop_old_start_step = "docker-compose -p testingsystemctl2 -f docker-start-compose.yml down"
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_start_step}".format(**locals()))
         # CHECK
