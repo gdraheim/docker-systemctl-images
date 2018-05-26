@@ -1,0 +1,12 @@
+GNUmakefile
+tmp
+Software
+*.retry
+*.png
+initialAdminPassword
+tmp.*
+.coverage
+.coverage.*
+*,cover
+*.pyc
+
