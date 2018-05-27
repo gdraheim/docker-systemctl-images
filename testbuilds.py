@@ -596,8 +596,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             self.test_9004_ansible_save_build_step_as_new_images()
             self.test_9005_ansible_restart_docker_start_compose()
             self.test_9006_ansible_unlock_jenkins()
-            self.test_9006_ansible_check_jenkins_login()
-            self.test_9008_ansible_stop_all_containers()
+            self.test_9007_ansible_check_jenkins_login()
+            self.test_9008_commit_containers_as_images()
+            self.test_9009_ansible_stop_all_containers()
     def test_9001_ansible_download_software(self):
         """ download the software parts (will be done just once) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -719,7 +720,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         grep_jenkins_html = "grep 'Manage Nodes' {tmp}/page.html"
         sh____(read_jenkins_html.format(**locals()))
         sh____(grep_jenkins_html.format(**locals()))
-    def test_9008_ansible_stop_all_containers(self):
+    def test_9008_commit_containers_as_images(self):
+        images = IMAGES
+        saveimage = "centos-jenkins"
+        new_image1 = "localhost:5000/systemctl:serversystem"
+        new_image2 = "localhost:5000/systemctl:virtualdesktop"
+        container1 = "systemctl2_serversystem_1"
+        container2 = "systemctl2_virtualdesktop_1"
+        cmd = 'docker rmi "{saveimage}"'
+        sx____(cmd.format(**locals()))
+        CMD = 'CMD ["/usr/bin/systemctl"]'
+        cmd = "docker commit -c '{CMD}' {container1} {images}:{saveimage}"
+        sh____(cmd.format(**locals()))
+    def test_9009_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
