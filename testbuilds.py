@@ -301,10 +301,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
-    def test_1000(self):
+    def test_100(self):
         logg.info("\n  CENTOS = '%s'", CENTOS)
         self.with_local_centos_mirror()
-    def test_1001_systemctl_testfile(self):
+    def test_101_systemctl_testfile(self):
         """ the systemctl.py file to be tested does exist """
         testname = self.testname()
         testdir = self.testdir()
@@ -320,7 +320,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         shutil.copy(_systemctl_py, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
-    def test_1002_systemctl_version(self):
+    def test_102_systemctl_version(self):
         systemctl = _systemctl_py 
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
@@ -329,7 +329,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 219"))
         self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def real_1002_systemctl_version(self):
+    def real_102_systemctl_version(self):
         cmd = "systemctl --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -337,7 +337,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"systemd [234]\d\d"))
         self.assertFalse(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def test_1003_systemctl_help(self):
+    def test_103_systemctl_help(self):
         """ the '--help' option and 'help' command do work """
         systemctl = _systemctl_py
         cmd = "{systemctl} --help"
@@ -355,7 +355,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
-    def test_7001_centos_httpd_dockerfile(self):
+    def test_701_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -399,7 +399,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7002_centos_postgres_dockerfile(self):
+    def test_702_centos_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -447,7 +447,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7020_ubuntu_apache2(self):
+    def test_720_ubuntu_apache2(self):
         """ WHEN using a systemd enabled Ubuntu as the base image
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -459,7 +459,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        self.skipTest("test_7021 makes it through a dockerfile")
+        self.skipTest("test_721 makes it through a dockerfile")
         testname = self.testname()
         port=self.testport()
         images = IMAGES
@@ -513,7 +513,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7021_ubuntu_apache2(self):
+    def test_721_ubuntu_apache2(self):
         """ WHEN using a dockerfile for systemd enabled Ubuntu
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -555,7 +555,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_7030_centos_lamp_stack(self):
+    def test_730_centos_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -590,7 +590,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
-    def test_7040_opensuse_lamp_stack(self):
+    def test_740_opensuse_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
@@ -624,7 +624,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
-    def test_7050_centos_elasticsearch(self):
+    def test_750_centos_elasticsearch(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -684,7 +684,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_9000_ansible_test(self):
+    def test_900_ansible_test(self):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
@@ -695,16 +695,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(rmi_commit1.format(**locals()))
         sx____(rmi_commit2.format(**locals()))
         if False:
-            self.test_9001_ansible_download_software()
-            self.test_9002_ansible_restart_docker_build_compose()
-            self.test_9003_ansible_run_build_step_playbooks()
-            self.test_9004_ansible_save_build_step_as_new_images()
-            self.test_9005_ansible_restart_docker_start_compose()
-            self.test_9006_ansible_unlock_jenkins()
-            self.test_9007_ansible_check_jenkins_login()
-            self.test_9008_commit_containers_as_images()
-            self.test_9009_ansible_stop_all_containers()
-    def test_9001_ansible_download_software(self):
+            self.test_901_ansible_download_software()
+            self.test_902_ansible_restart_docker_build_compose()
+            self.test_903_ansible_run_build_step_playbooks()
+            self.test_904_ansible_save_build_step_as_new_images()
+            self.test_905_ansible_restart_docker_start_compose()
+            self.test_906_ansible_unlock_jenkins()
+            self.test_907_ansible_check_jenkins_login()
+            self.test_908_commit_containers_as_images()
+            self.test_909_ansible_stop_all_containers()
+    def test_901_ansible_download_software(self):
         """ download the software parts (will be done just once) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -716,7 +716,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(os.listdir("Software/Selenium"), "^selenium-.*[.]tar.gz"))
         self.assertTrue(greps(os.listdir("Software/Selenium"), "^selenium-server.*[.]jar"))
         self.assertTrue(greps(os.listdir("Software/CentOS"), "^firefox.*[.]centos[.]x86_64[.]rpm"))
-    def test_9002_ansible_restart_docker_build_compose(self):
+    def test_902_ansible_restart_docker_build_compose(self):
         """ bring up the build-step deployment containers """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -727,7 +727,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # CHECK
         self.assertTrue(greps(output("docker ps"), " systemctl1_virtualdesktop_1$"))
         self.assertTrue(greps(output("docker ps"), " systemctl1_serversystem_1$"))
-    def test_9003_ansible_run_build_step_playbooks(self):
+    def test_903_ansible_run_build_step_playbooks(self):
         """ run the build-playbook (using ansible roles) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -763,7 +763,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl enable selenium.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl is-enabled selenium.service"))
         self.assertTrue(greps(open(tmp+"/systemctl.desktop.log"), "/systemctl daemon-reload"))
-    def test_9004_ansible_save_build_step_as_new_images(self):
+    def test_904_ansible_save_build_step_as_new_images(self):
         # stop the containers but keep them around
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -785,7 +785,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # CHECK
         self.assertTrue(greps(output("docker images"), IMAGES+".* serversystem "))
         self.assertTrue(greps(output("docker images"), IMAGES+".* virtualdesktop "))
-    def test_9005_ansible_restart_docker_start_compose(self):
+    def test_905_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -801,7 +801,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(output("docker ps"), " systemctl1_serversystem_1$"))
         self.assertTrue(greps(output("docker ps"), " systemctl2_virtualdesktop_1$"))
         self.assertTrue(greps(output("docker ps"), " systemctl2_serversystem_1$"))
-    def test_9006_ansible_unlock_jenkins(self):
+    def test_906_ansible_unlock_jenkins(self):
         """ unlock jenkins as a post-build config-example using selenium-server """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -814,7 +814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # CHECK
         test_screenshot = "ls -l *.png"
         sh____(test_screenshot)
-    def test_9007_ansible_check_jenkins_login(self):
+    def test_907_ansible_check_jenkins_login(self):
         """ check jenkins runs unlocked as a testcase result """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -825,7 +825,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         grep_jenkins_html = "grep 'Manage Nodes' {tmp}/page.html"
         sh____(read_jenkins_html.format(**locals()))
         sh____(grep_jenkins_html.format(**locals()))
-    def test_9008_commit_containers_as_images(self):
+    def test_908_commit_containers_as_images(self):
         images = IMAGES
         saveimage = "centos-jenkins"
         new_image1 = "localhost:5000/systemctl:serversystem"
@@ -837,7 +837,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         CMD = 'CMD ["/usr/bin/systemctl"]'
         cmd = "docker commit -c '{CMD}' {container1} {images}:{saveimage}"
         sh____(cmd.format(**locals()))
-    def test_9009_ansible_stop_all_containers(self):
+    def test_909_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")

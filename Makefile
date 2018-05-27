@@ -24,10 +24,10 @@ alltests: CH CP UA DJ
 .PHONY: tests
 tests: alltests
 
-CH centos-httpd.dockerfile: ; ./testbuilds.py test_7001
-CP centos-postgres.dockerfile: ; ./testbuilds.py test_7002
-UA ubuntu-apache2.dockerfile: ; ./testbuilds.py test_7021
-DJ docker-jenkins: ; ./testbuilds.py test_900*
+CH centos-httpd.dockerfile: ; ./testbuilds.py test_701
+CP centos-postgres.dockerfile: ; ./testbuilds.py test_702
+UA ubuntu-apache2.dockerfile: ; ./testbuilds.py test_721
+DJ docker-jenkins: ; ./testbuilds.py test_90*
 
 check: ;  ./testbuilds.py -vv 
 test_%: ; ./testbuilds.py $@ -vv
