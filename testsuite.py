@@ -580,12 +580,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_9000_ansible_test(self):
-        """ FIXME: "-p testing_systemctl" makes containers like "testingsystemctl_<service>_1" ?! """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
-        new_image1 = "localhost:5000/testingsystemctl:serversystem"
-        new_image2 = "localhost:5000/testingsystemctl:virtualdesktop"
+        new_image1 = "localhost:5000/systemctl:serversystem"
+        new_image2 = "localhost:5000/systemctl:virtualdesktop"
         rmi_commit1 = 'docker rmi "{new_image1}"'
         rmi_commit2 = 'docker rmi "{new_image2}"'
         sx____(rmi_commit1.format(**locals()))
@@ -615,21 +614,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ bring up the build-step deployment containers """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        drop_old_containers = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml down"
-        make_new_containers = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml up -d"
+        drop_old_containers = "docker-compose -p systemctl1 -f docker-build-compose.yml down"
+        make_new_containers = "docker-compose -p systemctl1 -f docker-build-compose.yml up -d"
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
         # CHECK
-        self.assertTrue(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
-        self.assertTrue(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
+        self.assertTrue(greps(output("docker ps"), " systemctl1_virtualdesktop_1$"))
+        self.assertTrue(greps(output("docker ps"), " systemctl1_serversystem_1$"))
     def test_9003_ansible_run_build_step_playbooks(self):
         """ run the build-playbook (using ansible roles) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname = "test_9003"
         # WHEN environment is prepared
-        make_logfile_1 = "docker exec testingsystemctl1_serversystem_1 bash -c 'touch /var/log/systemctl.log'"
-        make_logfile_2 = "docker exec testingsystemctl1_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'"
+        make_logfile_1 = "docker exec systemctl1_serversystem_1 bash -c 'touch /var/log/systemctl.log'"
+        make_logfile_2 = "docker exec systemctl1_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'"
         sh____(make_logfile_1)
         sh____(make_logfile_2)
         # THEN ready to run the deployment playbook
@@ -641,8 +640,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         # CHECK
         tmp = self.testdir(testname)
-        read_logfile_1 = "docker cp testingsystemctl1_serversystem_1:/var/log/systemctl.log {tmp}/systemctl.server.log"
-        read_logfile_2 = "docker cp testingsystemctl1_virtualdesktop_1:/var/log/systemctl.log {tmp}/systemctl.desktop.log"
+        read_logfile_1 = "docker cp systemctl1_serversystem_1:/var/log/systemctl.log {tmp}/systemctl.server.log"
+        read_logfile_2 = "docker cp systemctl1_virtualdesktop_1:/var/log/systemctl.log {tmp}/systemctl.desktop.log"
         sh____(read_logfile_1.format(**locals()))
         sh____(read_logfile_2.format(**locals()))
         self.assertFalse(greps(open(tmp+"/systemctl.server.log"), " ERROR "))
@@ -669,10 +668,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(ansible.format(**locals()))
         message = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         startup = "CMD '/usr/bin/systemctl'"
-        container1 = "testingsystemctl1_serversystem_1"
-        new_image1 = "localhost:5000/testingsystemctl:serversystem"
-        container2 = "testingsystemctl1_virtualdesktop_1"
-        new_image2 = "localhost:5000/testingsystemctl:virtualdesktop"
+        container1 = "systemctl1_serversystem_1"
+        new_image1 = "localhost:5000/systemctl:serversystem"
+        container2 = "systemctl1_virtualdesktop_1"
+        new_image2 = "localhost:5000/systemctl:virtualdesktop"
         commit1 = 'docker commit -c "{startup}" -m "{message}" {container1} "{new_image1}"'
         commit2 = 'docker commit -c "{startup}" -m "{message}" {container2} "{new_image2}"'
         sh____(commit1.format(**locals()))
@@ -684,18 +683,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        drop_old_build_step = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml down"
-        drop_old_containers = "docker-compose -p testingsystemctl2 -f docker-start-compose.yml down"
-        make_new_containers = "docker-compose -p testingsystemctl2 -f docker-start-compose.yml up -d"
+        drop_old_build_step = "docker-compose -p systemctl1 -f docker-build-compose.yml down"
+        drop_old_containers = "docker-compose -p systemctl2 -f docker-start-compose.yml down"
+        make_new_containers = "docker-compose -p systemctl2 -f docker-start-compose.yml up -d"
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
         time.sleep(2) # sometimes the container dies early
         # CHECK
-        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
-        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
-        self.assertTrue(greps(output("docker ps"), " testingsystemctl2_virtualdesktop_1$"))
-        self.assertTrue(greps(output("docker ps"), " testingsystemctl2_serversystem_1$"))
+        self.assertFalse(greps(output("docker ps"), " systemctl1_virtualdesktop_1$"))
+        self.assertFalse(greps(output("docker ps"), " systemctl1_serversystem_1$"))
+        self.assertTrue(greps(output("docker ps"), " systemctl2_virtualdesktop_1$"))
+        self.assertTrue(greps(output("docker ps"), " systemctl2_serversystem_1$"))
     def test_9006_ansible_unlock_jenkins(self):
         """ unlock jenkins as a post-build config-example using selenium-server """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -725,15 +724,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         time.sleep(3)
-        drop_old_build_step = "docker-compose -p testingsystemctl1 -f docker-build-compose.yml down"
-        drop_old_start_step = "docker-compose -p testingsystemctl2 -f docker-start-compose.yml down"
+        drop_old_build_step = "docker-compose -p systemctl1 -f docker-build-compose.yml down"
+        drop_old_start_step = "docker-compose -p systemctl2 -f docker-start-compose.yml down"
         sx____("{drop_old_build_step}".format(**locals()))
         sx____("{drop_old_start_step}".format(**locals()))
         # CHECK
-        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_virtualdesktop_1$"))
-        self.assertFalse(greps(output("docker ps"), " testingsystemctl1_serversystem_1$"))
-        self.assertFalse(greps(output("docker ps"), " testingsystemctl2_virtualdesktop_1$"))
-        self.assertFalse(greps(output("docker ps"), " testingsystemctl2_serversystem_1$"))
+        self.assertFalse(greps(output("docker ps"), " systemctl1_virtualdesktop_1$"))
+        self.assertFalse(greps(output("docker ps"), " systemctl1_serversystem_1$"))
+        self.assertFalse(greps(output("docker ps"), " systemctl2_virtualdesktop_1$"))
+        self.assertFalse(greps(output("docker ps"), " systemctl2_serversystem_1$"))
 
 if __name__ == "__main__":
     from optparse import OptionParser
