@@ -624,6 +624,66 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #
         self.rm_testdir()
+    def test_7050_centos_elasticsearch(self):
+        """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
+        filename = "elasticsearch-1.7.3.noarch.rpm"
+        into_dir = "Software/ElasticSearch"
+        download(base_url, filename, into_dir)
+        self.assertTrue(greps(os.listdir("Software/ElasticSearch"), filename))
+        #
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        port=self.testport()
+        name="centos-elasticsearch"
+        dockerfile="centos-elasticsearch.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        logg.info("========================>>>>>>>>")
+        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        sh____(cmd.format(**locals()))
+        # THEN
+        testdir = self.testdir(testname)
+        cmd = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        sh____(cmd.format(**locals()))
+        cmd = "grep 'You Know, for Search' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # STOP
+        cmd = "docker exec {testname} systemctl status elasticsearch"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        # CHECK
+        systemctl_log = open(testdir+"/systemctl.log").read()
+        self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
+        self.assertTrue(greps(systemctl_log, "simple start done PID"))
+        self.assertTrue(greps(systemctl_log, "stop kill PID"))
+        self.assertTrue(greps(systemctl_log, "stopped PID .* EXIT 143"))
+        #
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_9000_ansible_test(self):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
