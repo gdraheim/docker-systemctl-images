@@ -12,4 +12,5 @@
   get_url:
     dest: "{{selenium_geckodriver_software}}"
     url: "{{selenium_geckodriver_download}}/{{selenium_geckodriver_package}}"
+    validate_certs: "{{selenium_geckodriver_validate_certs}}"
   when: not need_download.stat.exists

@@ -12,4 +12,5 @@
   get_url:
     dest: "{{selenium_python_software}}"
     url: "{{selenium_python_download}}/{{selenium_python_package}}"
+    validate_certs: "{{selenium_python_validate_certs}}"
   when: not need_download.stat.exists
