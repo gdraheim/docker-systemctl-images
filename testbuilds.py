@@ -29,14 +29,6 @@ _python = "/usr/bin/python"
 _systemctl_py = "files/docker/systemctl.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
-_cov = ""
-_cov_run = "coverage2 run '--omit=*/six.py' --append -- "
-_cov_cmd = "coverage2"
-_cov3run = "coverage3 run '--omit=*/six.py' --append -- "
-_cov3cmd = "coverage3"
-_python_coverage = "python-coverage"
-_python3coverage = "python3-coverage"
-COVERAGE = False
 
 IMAGES = "localhost:5000/systemctl"
 CENTOS = "centos:7.4.1708"
@@ -206,19 +198,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             for item in glob(os_path(root, folder + "/test_*")):
                 logg.info("rm %s", item)
                 os.remove(item)
-    def coverage(self, testname = None):
-        testname = testname or self.caller_testname()
-        newcoverage = ".coverage."+testname
-        time.sleep(1) # TODO: flush output
-        if os.path.isfile(".coverage"):
-            # shutil.copy(".coverage", newcoverage)
-            f = open(".coverage")
-            text = f.read()
-            f.close()
-            text2 = re.sub(r"(\]\}\})[^{}]*(\]\}\})$", r"\1", text)
-            f = open(newcoverage, "w")
-            f.write(text2)
-            f.close()
     def root(self, testdir, real = None):
         if real: return "/"
         root_folder = os.path.join(testdir, "root")
@@ -341,9 +320,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         shutil.copy(_systemctl_py, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
-        self.coverage()
     def test_1002_systemctl_version(self):
-        systemctl = _cov + _systemctl_py 
+        systemctl = _systemctl_py 
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -351,7 +329,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 219"))
         self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-        self.coverage()
     def real_1002_systemctl_version(self):
         cmd = "systemctl --version"
         out, end = output2(cmd.format(**locals()))
@@ -362,7 +339,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "[+]SYSVINIT"))
     def test_1003_systemctl_help(self):
         """ the '--help' option and 'help' command do work """
-        systemctl = _cov + _systemctl_py
+        systemctl = _systemctl_py
         cmd = "{systemctl} --help"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -378,7 +355,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
-        self.coverage()
     def test_7001_centos_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
@@ -757,8 +733,6 @@ if __name__ == "__main__":
        help="systemctl.py file to be tested (%default)")
     _o.add_option("-p","--python", metavar="EXE", default=_python,
        help="use another python execution engine [%default]")
-    _o.add_option("-a","--coverage", action="count", default=0,
-       help="gather coverage.py data (use -aa for new set) [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
@@ -768,11 +742,6 @@ if __name__ == "__main__":
     #
     _systemctl_py = opt.systemctl_py
     _python = opt.python
-    _python_version = output(_python + " --version 2>&1")
-    if "Python 3" in _python_version:
-        _cov_run = _cov3run
-        _cov_cmd = _cov3cmd
-        _python_coverage = _python3coverage
     #
     logfile = None
     if opt.logfile:
@@ -789,13 +758,6 @@ if __name__ == "__main__":
         xmlresults = open(opt.xmlresults, "w")
         logg.info("xml results into %s", opt.xmlresults)
     #
-    if opt.coverage:
-        COVERAGE = True
-        _cov = _cov_run
-        if opt.coverage > 1:
-            if os.path.exists(".coverage"):
-                logg.info("rm .coverage")
-                os.remove(".coverage")
     # unittest.main()
     suite = unittest.TestSuite()
     if not args: args = [ "test_*" ]
@@ -824,7 +786,3 @@ if __name__ == "__main__":
             import xmlrunner
             Runner = xmlrunner.XMLTestRunner
         Runner(logfile.stream, verbosity=opt.verbose).run(suite)
-    if opt.coverage:
-        print(" " + _cov_cmd + " combine")
-        print(" " + _cov_cmd + " report " + _systemctl_py)
-        print(" " + _cov_cmd + " annotate " + _systemctl_py)
