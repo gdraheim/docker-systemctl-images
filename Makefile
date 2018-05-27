@@ -19,49 +19,29 @@ help:
 copy cp:
 	cp ../docker-systemctl-replacement/files/docker/systemctl.py files/docker/systemctl.py
 2: copy
-3:
-	cp -v files/docker/systemctl.py files/docker/systemctl3.py
-	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" files/docker/systemctl3.py
-	diff -U1 files/docker/systemctl.py files/docker/systemctl3.py || true
 
 alltests: CH CP UA DJ
 .PHONY: tests
 tests: alltests
 
-CH centos-httpd.dockerfile: ; ./testsuite.py test_6001
-CP centos-postgres.dockerfile: ; ./testsuite.py test_6002
-UA ubuntu-apache2.dockerfile: ; ./testsuite.py test_6005
-DJ docker-jenkins: ; ./testsuite.py test_900*
+CH centos-httpd.dockerfile: ; ./testbuilds.py test_7001
+CP centos-postgres.dockerfile: ; ./testbuilds.py test_7002
+UA ubuntu-apache2.dockerfile: ; ./testbuilds.py test_7021
+DJ docker-jenkins: ; ./testbuilds.py test_900*
 
-COVERAGE=--coverage
-est_%: ; rm .coverage* ; ./testsuite.py t$@ -vv --coverage
-coverage: ; rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6
-check: ; rm .coverage* ; ./testsuite.py -vv --coverage
-test_%: ; ./testsuite.py $@ -vv
-real_%: ; ./testsuite.py $@ -vv
+check: ;  ./testbuilds.py -vv 
+test_%: ; ./testbuilds.py $@ -vv
+real_%: ; ./testbuilds.py $@ -vv
 
-st_%:
-	$(MAKE) tmp/systemctl.py
-	rm .coverage* ; ./testsuite.py -vv --coverage te$@ \
-	   '--with=tmp/systemctl.py' --python=/usr/bin/python3
-check3:
-	$(MAKE) tmp/systemctl.py
-	rm .coverage* ; ./testsuite.py -vv --coverage \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-coverage3:
-	$(MAKE) tmp/systemctl.py
-	rm .coverage* ; ./testsuite.py -vv --coverage test_1 test_2 test_3 test_4 test_6 \
-	  '--with=tmp/systemctl.py' --python=/usr/bin/python3
-
-tmp/systemctl.py : files/docker/systemctl.py
+3: tmp/systemctl3.py
+tmp/systemctl.py tmp/systemctl3.py : files/docker/systemctl.py
 	test -d tmp || mkdir tmp
-	cp files/docker/systemctl.py tmp/systemctl.py
-	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" tmp/systemctl.py
+	cp files/docker/systemctl.py $@
+	sed -i -e "s|/usr/bin/python|/usr/bin/python3|" $@
 
-op opensuse: ; ./testsuite.py make_opensuse
-ub ubuntu:   ; ./testsuite.py make_ubuntu
-ce centos:   ; ./testsuite.py make_centos
+op opensuse: ; ./testbuilds.py make_opensuse
+ub ubuntu:   ; ./testbuilds.py make_ubuntu
+ce centos:   ; ./testbuilds.py make_centos
 
 clean:
-	- rm .coverage*
 	- rm -rf tmp/tmp.test_*

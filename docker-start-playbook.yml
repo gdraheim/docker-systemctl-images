@@ -27,7 +27,7 @@
         dest: "./"
     - name: push the unlock program
       copy: 
-        src: "initialJenkinsSetup.py"
+        src: "files/jenkins/initialJenkinsSetup.py"
         dest: "./"
     - name: wait for xnvc
       wait_for:
