@@ -38,7 +38,7 @@ _python_coverage = "python-coverage"
 _python3coverage = "python3-coverage"
 COVERAGE = False
 
-IMAGES = "localhost:5000/testingsystemctl"
+IMAGES = "localhost:5000/systemctl"
 CENTOS = "centos:7.4.1708"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.3"
@@ -146,7 +146,8 @@ def os_path(root, path):
     while path.startswith(os.path.sep):
        path = path[1:]
     return os.path.join(root, path)
-
+def docname(path):
+    return os.path.splitext(os.path.basename(path))[0]
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
     def caller_testname(self):
@@ -395,6 +396,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         name="centos-httpd"
         dockerfile="centos-httpd.dockerfile"
+        savename = docname(dockerfile)
         images = IMAGES
         # WHEN
         cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
@@ -413,6 +415,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -435,6 +441,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         name="centos-postgres"
         dockerfile="centos-postgres.dockerfile"
+        savename = docname(dockerfile)
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -457,6 +464,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
@@ -472,17 +483,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        self.skipTest("test_7021 makes it through a dockerfile")
         testname = self.testname()
         port=self.testport()
         images = IMAGES
-        image = "ubuntu:16.04"
+        basename = "ubuntu:16.04"
+        savename = "ubuntu-apache2"
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
-        logg.info("%s:%s %s", testname, port, image)
+        logg.info("%s:%s %s", testname, port, basename)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "docker run --detach --name={testname} {basename} sleep 200"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
@@ -516,6 +529,52 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_7021_ubuntu_apache2(self):
+        """ WHEN using a dockerfile for systemd enabled Ubuntu
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname = self.testname()
+        port=self.testport()
+        dockerfile="ubuntu-apache2.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d -p {port}:80 --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        # THEN
+        tmp = self.testdir(testname)
+        cmd = "sleep 5; wget -O {tmp}/{testname}.txt http://127.0.0.1:{port}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {tmp}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        # CLEAN
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
