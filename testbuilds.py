@@ -555,6 +555,75 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_7030_centos_lamp_stack(self):
+        """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        port=self.testport()
+        name="centos-lamp-stack"
+        dockerfile="centos-lamp-stack.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        # THEN
+        time.sleep(5)
+        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # CLEAN
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        self.rm_testdir()
+    def test_7040_opensuse_lamp_stack(self):
+        """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        port=self.testport()
+        name="opensuse-lamp-stack"
+        dockerfile="opensuse-lamp-stack.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        # THEN
+        time.sleep(5)
+        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # CLEAN
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        self.rm_testdir()
     def test_9000_ansible_test(self):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
