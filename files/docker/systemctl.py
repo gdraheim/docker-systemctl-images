@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.3.2226"
+__version__ = "1.3.2236"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -154,7 +154,7 @@ def _var(path):
         return path
     if path.startswith("/var"):
         user = os_getlogin()
-        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/"+user)
+        runtime = os.environ.get("XDG_RUNTIME_DIR", "/tmp/run-"+user)
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
@@ -1806,7 +1806,7 @@ class Systemctl:
         self.chdir_workingdir(conf, check = False)
         try:
             os.execve(cmd[0], cmd, env)
-        except Exception, e:
+        except Exception as e:
             logg.error("(%s): %s", shell_cmd(cmd), e)
             sys.exit(1)
     def exec_start_unit(self, unit):

@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.1.2177"
+__version__ = "1.3.2236"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -37,6 +37,7 @@ OPENSUSE = "opensuse:42.3"
 
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
+RUNTIME = "/tmp/run-"
 
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
@@ -413,7 +414,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname=self.testname()
         testdir = self.testdir()
         name="centos-httpd"
-        dockerfile="centos-httpd-user.dockerfile"
+        dockerfile="centos-httpd-not-user.dockerfile"
         savename = docname(dockerfile)
         images = IMAGES
         # WHEN
@@ -564,6 +565,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         savename = docname(dockerfile)
         images = IMAGES
         psql = PSQL_TOOL
+        runtime = RUNTIME
         # WHEN
         cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -581,7 +583,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/tmp/postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
+        cmd = "docker cp {testname}:{runtime}postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
@@ -894,7 +896,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
