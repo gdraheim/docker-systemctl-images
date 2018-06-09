@@ -1,0 +1,15 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: download check
+  stat: path="{{elasticsearch_software}}/{{elasticsearch_rpm}}"
+  register: need_download
+- name: "mkdir for software"
+  file:
+    path: "{{elasticsearch_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download the software
+  get_url:
+    dest: "{{elasticsearch_software}}"
+    url: "{{elasticsearch_download}}/{{elasticsearch_rpm}}"
+  when: not need_download.stat.exists
