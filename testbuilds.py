@@ -451,6 +451,58 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_705_centos_postgres_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled.
+             AND in this variant it runs under User=postgres right
+               there from PID-1 started implicity in --user mode."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos-postgres"
+        dockerfile="centos-postgres-user.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        query = "SELECT rolname FROM pg_roles"
+        cmd = "sleep 5; {login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/tmp/postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "postgres.*python.*systemctl"))
+        self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_720_ubuntu_apache2(self):
         """ WHEN using a systemd enabled Ubuntu as the base image
             THEN we can create an image with an Apache HTTP service 
