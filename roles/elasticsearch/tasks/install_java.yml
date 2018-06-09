@@ -1,0 +1,10 @@
+- name: install java
+  package: pkg="{{item}}" state="installed"
+  become: yes
+  with_items: "{{elasticsearch_java_packages}}"
+- name: install systemctl.py
+  copy:
+    src: files/docker/systemctl.py
+    dest: /usr/bin/systemctl
+  become: yes
+  when: "ansible_connection == 'docker'"

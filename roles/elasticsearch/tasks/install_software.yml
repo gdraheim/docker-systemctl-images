@@ -1,0 +1,16 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: install software
+  shell: |
+    yum install -y which # TODO: missing dependency of elasticsearch
+    yum install -y {{elasticsearch_software}}/{{elasticsearch_rpm}}
+  become: yes
+- name: enable software
+  service:
+    name: "{{elasticsearch_service}}"
+    enabled: yes
+  become: yes
+- name: check version
+  shell: "rpm -q --info elasticsearch | grep Version"
+  register: installedversion
+- debug: var=installedversion.stdout
