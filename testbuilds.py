@@ -401,12 +401,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_705_centos_httpd_user_dockerfile(self):
+    def test_705_centos_httpd_not_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
              AND in this variant it runs under User=httpd right
-               there from PID-1 started implicity in --user mode."""
+               there from PID-1 started implicity in --user mode
+            THEN it fails."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
@@ -437,6 +438,62 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_706_centos_httpd_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+             AND in this variant it runs under User=httpd right
+               there from PID-1 started implicity in --user mode.
+            THEN it succeeds if modified"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos-httpd"
+        dockerfile="centos-httpd-user.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start httpd --user"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "apache.*python.*systemctl"))
+        self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
