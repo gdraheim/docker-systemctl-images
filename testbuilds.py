@@ -862,8 +862,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
-            Addtionally we can make an example application to be
-            started within to have check that it is working fine."""
+            Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -888,6 +887,52 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{savename}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_765_centos_tomcat_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+            THEN we can create an image with an tomcat service 
+                 being installed and enabled.
+            In this case the container is run in --user mode."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="centos-tomcat-user.dockerfile"
+        savename = docname(dockerfile)
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080/sample"
+        sh____(cmd.format(**locals()))
+        cmd = "grep Hello {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "tomcat.*python.*systemctl"))
+        self.assertFalse(greps(out, "root"))
         # SAVE
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))

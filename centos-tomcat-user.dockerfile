@@ -9,4 +9,5 @@ COPY files/docker/systemctl.py /usr/bin/systemctl
 RUN systemctl enable tomcat
 
 EXPOSE 8080
+USER tomcat
 CMD /usr/bin/systemctl
