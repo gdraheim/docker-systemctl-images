@@ -846,7 +846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 8; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -1143,8 +1143,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(commit1.format(**locals()))
         sh____(commit2.format(**locals()))
         # CHECK
-        self.assertTrue(greps(output("docker images"), IMAGES+".*/serversystem\\s+"))
-        self.assertTrue(greps(output("docker images"), IMAGES+".*/virtualdesktop\\s+"))
+        self.assertTrue(greps(output("docker images"), SAVETO+".*/serversystem"))
+        self.assertTrue(greps(output("docker images"), SAVETO+".*/virtualdesktop"))
     def test_905_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
