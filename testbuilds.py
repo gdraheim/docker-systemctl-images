@@ -30,7 +30,8 @@ _systemctl_py = "files/docker/systemctl.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
-IMAGES = "localhost:5000/systemctl"
+SAVETO = "localhost:5000/systemctl"
+IMAGES = "localhost:5000/systemctl/image"
 CENTOS = "centos:7.4.1708"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse:42.3"
@@ -379,6 +380,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-httpd"
         dockerfile="centos-httpd.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         # WHEN
         cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
@@ -400,9 +402,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -421,6 +423,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-httpd"
         dockerfile="centos-httpd-not-user.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         # WHEN
         cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
@@ -462,6 +465,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-httpd"
         dockerfile="centos-httpd-user.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         # WHEN
         cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
@@ -497,9 +501,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -523,6 +527,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-postgres"
         dockerfile="centos-postgres.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -547,9 +552,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -568,6 +573,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-postgres"
         dockerfile="centos-postgres-user.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         runtime = RUNTIME
@@ -600,9 +606,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -622,6 +628,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.skipTest("test_721 makes it through a dockerfile")
         testname = self.testname()
         testdir = self.testdir()
+        saveto = SAVETO
         images = IMAGES
         basename = "ubuntu:16.04"
         savename = "ubuntu-apache2-test"
@@ -669,9 +676,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -692,6 +699,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         dockerfile="ubuntu-apache2.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         # WHEN
         cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
@@ -713,9 +721,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -730,6 +738,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-lamp-stack"
         dockerfile="centos-lamp-stack.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -754,9 +763,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -770,6 +779,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="opensuse-lamp-stack"
         dockerfile="opensuse-lamp-stack.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -794,9 +804,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -818,6 +828,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name="centos-elasticsearch"
         dockerfile="centos-elasticsearch.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -856,9 +867,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -875,6 +886,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         dockerfile="centos-tomcat.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -897,9 +909,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -916,6 +928,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         dockerfile="centos-tomcat-user.dockerfile"
         savename = docname(dockerfile)
+        saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
@@ -943,9 +956,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -959,6 +972,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         setupfile="centos-elasticsearch-setup.yml"
         savename = docname(setupfile)
         basename = CENTOS
+        saveto = SAVETO
         images = IMAGES
         #
         cmd = "docker rm --force {testname}"
@@ -1009,9 +1023,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{savename}"
+        cmd = "docker rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {images}:{savename}"
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
@@ -1161,6 +1175,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(grep_jenkins_html.format(**locals()))
         self.rm_testdir()
     def test_908_commit_containers_as_images(self):
+        saveto = SAVETO
         images = IMAGES
         saveimage = "centos-jenkins"
         new_image1 = "localhost:5000/systemctl:serversystem"
