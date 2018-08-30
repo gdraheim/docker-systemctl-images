@@ -1,0 +1,37 @@
+version: "2"
+
+services:
+  virtualdesktop:
+    image: "centos:7.4.1708"
+    command: "sleep 9999"
+    expose: [ 5599, 4444 ]
+    ports:
+       - "5590:5599"
+    extra_hosts:
+       - "mirrorlist.centos.org: 10.193.35.2"
+    networks:
+      network93:
+        ipv4_address: "10.193.35.4"
+  serversystem:
+    image: "centos:7.4.1708"
+    command: "sleep 9999"
+    expose: [ 8080 ]
+    ports:
+       - "8090:8080"
+    extra_hosts:
+       - "mirrorlist.centos.org: 10.193.35.2"
+    networks:
+      network93:
+        ipv4_address: "10.193.35.3"
+  centos_repo:
+    image: "localhost:5000/centos-repo:7.4.1708"
+    expose: [ 80 ]
+    networks:
+      network93:
+        ipv4_address: "10.193.35.2"
+
+networks:
+  network93:
+    ipam:
+      config:
+        - subnet: "10.193.35.0/16"

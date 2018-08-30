@@ -1066,8 +1066,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ bring up the build-step deployment containers """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        drop_old_containers = "docker-compose -p systemctl1 -f docker-build-compose.yml down"
-        make_new_containers = "docker-compose -p systemctl1 -f docker-build-compose.yml up -d"
+        compose_and_repo = "docker-build-compose"
+        if self.local_image(CENTOS):
+           compose_and_repo += "-with-repo"
+        drop_old_containers = "docker-compose -p systemctl1 -f {compose_and_repo}.yml down".format(**locals())
+        make_new_containers = "docker-compose -p systemctl1 -f {compose_and_repo}.yml up -d".format(**locals())
         sx____("{drop_old_containers}".format(**locals()))
         sh____("{make_new_containers} || {make_new_containers} || {make_new_containers}".format(**locals()))
         # CHECK
@@ -1081,14 +1084,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # WHEN environment is prepared
         make_logfile_1 = "docker exec systemctl1_serversystem_1 bash -c 'touch /var/log/systemctl.log'"
         make_logfile_2 = "docker exec systemctl1_virtualdesktop_1 bash -c 'touch /var/log/systemctl.log'"
+        chmod_logfile_1 = "docker exec systemctl1_serversystem_1 bash -c 'chmod 666 /var/log/systemctl.log'"
+        chmod_logfile_2 = "docker exec systemctl1_virtualdesktop_1 bash -c 'chmod 666 /var/log/systemctl.log'"
         sh____(make_logfile_1)
         sh____(make_logfile_2)
+        sh____(chmod_logfile_1)
+        sh____(chmod_logfile_2)
         # THEN ready to run the deployment playbook
-        inventory = "docker-build-compose.ini"
+        prep = "ansible-sudo.yml"
         playbooks = "docker-build-playbook.yml"
+        inventory = "docker-build-compose.ini"
         variables = "-e LOCAL=yes -e jenkins_prefix=/buildserver"
-        ansible = "ansible-playbook -i {inventory} {variables} {playbooks} -vv"
-        sh____(ansible.format(**locals()))
+        cmd = "ansible-playbook -i {inventory} {prep} -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "ansible-playbook -i {inventory} {variables} {playbooks} -vv"
+        sh____(cmd.format(**locals()))
         #
         # CHECK
         read_logfile_1 = "docker cp systemctl1_serversystem_1:/var/log/systemctl.log {testdir}/systemctl.server.log"
@@ -1104,7 +1114,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_server_log, "/systemctl daemon-reload"))
         # self.assertTrue(greps(systemctl_server_log, "/systemctl status jenkins.service"))
         # self.assertTrue(greps(systemctl_server.log, "--property=ActiveState")) # <<< new
-        self.assertTrue(greps(systemctl_server_log, "/systemctl show jenkins.service"))
+        self.assertTrue(greps(systemctl_server_log, "/systemctl show jenkins"))
         self.assertTrue(greps(systemctl_desktop_log, "/systemctl show xvnc.service"))
         self.assertTrue(greps(systemctl_desktop_log, "/systemctl enable xvnc.service"))
         self.assertTrue(greps(systemctl_desktop_log, "/systemctl enable selenium.service"))
@@ -1118,26 +1128,31 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         inventory = "docker-build-compose.ini"
         playbooks = "docker-build-stop.yml"
         variables = "-e LOCAL=yes"
-        ansible = "ansible-playbook -i {inventory} {variables} {playbooks} -vv"
-        sh____(ansible.format(**locals()))
+        cmd = "docker exec systemctl1_virtualdesktop_1 bash -c 'systemctl status jenkins'"
+        sx____(cmd.format(**locals()))
+        cmd = "ansible-playbook -i {inventory} {variables} {playbooks} -vv"
+        sh____(cmd.format(**locals()))
         message = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
         startup = "CMD '/usr/bin/systemctl'"
         container1 = "systemctl1_serversystem_1"
-        new_image1 = "localhost:5000/systemctl:serversystem"
+        new_image1 = "localhost:5000/systemctl/serversystem"
         container2 = "systemctl1_virtualdesktop_1"
-        new_image2 = "localhost:5000/systemctl:virtualdesktop"
+        new_image2 = "localhost:5000/systemctl/virtualdesktop"
         commit1 = 'docker commit -c "{startup}" -m "{message}" {container1} "{new_image1}"'
         commit2 = 'docker commit -c "{startup}" -m "{message}" {container2} "{new_image2}"'
         sh____(commit1.format(**locals()))
         sh____(commit2.format(**locals()))
         # CHECK
-        self.assertTrue(greps(output("docker images"), IMAGES+".* serversystem "))
-        self.assertTrue(greps(output("docker images"), IMAGES+".* virtualdesktop "))
+        self.assertTrue(greps(output("docker images"), IMAGES+".*/serversystem\\s+"))
+        self.assertTrue(greps(output("docker images"), IMAGES+".*/virtualdesktop\\s+"))
     def test_905_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
-        drop_old_build_step = "docker-compose -p systemctl1 -f docker-build-compose.yml down"
+        compose_and_repo = "docker-build-compose"
+        if self.local_image(CENTOS):
+           compose_and_repo += "-with-repo"
+        drop_old_build_step = "docker-compose -p systemctl1 -f {compose_and_repo}.yml down".format(**locals())
         drop_old_containers = "docker-compose -p systemctl2 -f docker-start-compose.yml down"
         make_new_containers = "docker-compose -p systemctl2 -f docker-start-compose.yml up -d"
         sx____("{drop_old_build_step}".format(**locals()))
@@ -1178,14 +1193,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         saveimage = "centos-jenkins"
-        new_image1 = "localhost:5000/systemctl:serversystem"
-        new_image2 = "localhost:5000/systemctl:virtualdesktop"
+        new_image1 = "localhost:5000/systemctl/serversystem"
+        new_image2 = "localhost:5000/systemctl/virtualdesktop"
         container1 = "systemctl2_serversystem_1"
         container2 = "systemctl2_virtualdesktop_1"
         cmd = 'docker rmi "{saveimage}"'
         sx____(cmd.format(**locals()))
         CMD = 'CMD ["/usr/bin/systemctl"]'
-        cmd = "docker commit -c '{CMD}' {container1} {images}:{saveimage}"
+        cmd = "docker commit -c '{CMD}' {container1} {saveto}/{saveimage}:latest"
         sh____(cmd.format(**locals()))
     def test_909_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
