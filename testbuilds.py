@@ -306,11 +306,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ip_a = self.ip_container(container)
         logg.info("::: %s => %s", container, ip_a)
         return dict(zip(hosts, [ ip_a ] * len(hosts)))
-    def add_hosts(self, hosts):
-        return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
-        # for host, ip_a in mapping.items():
-        #    yield "--add-host {host}:{ip_a}"
-    def local_image(self, image):
+    def with_local_mirror(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
@@ -330,11 +326,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if image.startswith("ubuntu:"):
             version = image[len("ubuntu:"):]
             hosts = self.with_local_ubuntu_mirror(version)
+        return hosts
+    def add_hosts(self, hosts):
+        return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
+        # for host, ip_a in mapping.items():
+        #    yield "--add-host {host}:{ip_a}"
+    def local_image(self, image):
+        hosts =  self.with_local_mirror(image)
         if hosts:
             add_hosts = self.add_hosts(hosts)
             logg.info("%s %s", add_hosts, image)
             return "{add_hosts} {image}".format(**locals())
         return image
+    def local_addhosts(self, dockerfile):
+        image = ""
+        for line in open(dockerfile):
+            m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
+            if m: 
+                image = m.group(1)
+                break
+            m = re.match("[Ff][Rr][Oo][Mm] *(\w[^ ]*)", line)
+            if m: 
+                image = m.group(1).strip()
+                break
+        logg.info("--\n-- '%s' FROM '%s'", dockerfile, image)
+        if image:
+            hosts = self.with_local_mirror(image)
+            return self.add_hosts(hosts)
+        return ""
     def drop_container(self, name):
         cmd = "docker rm --force {name}"
         sx____(cmd.format(**locals()))
@@ -431,11 +450,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         name="centos-httpd"
         dockerfile="centos-httpd.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -474,11 +494,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         name="centos-httpd"
         dockerfile="centos-httpd-not-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -516,11 +537,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         name="centos-httpd"
         dockerfile="centos-httpd-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -578,12 +600,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         name="centos-postgres"
         dockerfile="centos-postgres.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -624,13 +647,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         name="centos-postgres"
         dockerfile="centos-postgres-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         runtime = RUNTIME
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -684,13 +708,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         basename = "ubuntu:16.04"
         savename = "ubuntu-apache2-test"
+        image = self.local_image(basename)
         python_base = os.path.basename(_python)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, basename)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {basename} sleep 200"
+        cmd = "docker run --detach --name={testname} {image} sleep 200"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
@@ -750,11 +775,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         dockerfile="ubuntu-apache2.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -789,12 +815,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         name="centos-lamp-stack"
         dockerfile="centos-lamp-stack.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -830,12 +857,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         name="opensuse-lamp-stack"
         dockerfile="opensuse-lamp-stack.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -879,12 +907,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         port=self.testport()
         name="centos-elasticsearch"
         dockerfile="centos-elasticsearch.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -937,12 +966,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos-tomcat.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -979,12 +1009,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos-tomcat-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1026,10 +1057,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         basename = CENTOS
         saveto = SAVETO
         images = IMAGES
+        image = self.local_image(basename)
         #
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {basename} sleep infinity"
+        cmd = "docker run -d --name {testname} {image} sleep infinity"
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
         cmd = "ansible-playbook -i centos-elasticsearch-setup.ini ansible-sudo.yml -vv" + prepare
