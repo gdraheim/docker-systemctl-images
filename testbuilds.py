@@ -311,8 +311,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
-        if os.environ.get("NONLOCAL",""):
-            return image
         hosts = {}
         if image.startswith("centos:"):
             version = image[len("centos:"):]
@@ -332,10 +330,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # for host, ip_a in mapping.items():
         #    yield "--add-host {host}:{ip_a}"
     def local_image(self, image):
+        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
+            Effectivly when it is required to 'docker start centos:x.y' then do
+            'docker start centos-repo:x.y' before and extend the original to 
+            'docker start --add-host mirror...:centos-repo centos:x.y'. """
+        if os.environ.get("NONLOCAL",""):
+            return image
         hosts =  self.with_local_mirror(image)
         if hosts:
             add_hosts = self.add_hosts(hosts)
-            logg.info("%s %s", add_hosts, image)
+            logg.debug("%s %s", add_hosts, image)
             return "{add_hosts} {image}".format(**locals())
         return image
     def local_addhosts(self, dockerfile):
@@ -349,7 +353,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if m: 
                 image = m.group(1).strip()
                 break
-        logg.info("--\n-- '%s' FROM '%s'", dockerfile, image)
+        logg.debug("--\n-- '%s' FROM '%s'", dockerfile, image)
         if image:
             hosts = self.with_local_mirror(image)
             return self.add_hosts(hosts)
