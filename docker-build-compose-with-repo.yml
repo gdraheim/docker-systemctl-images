@@ -24,7 +24,8 @@ services:
       network93:
         ipv4_address: "10.193.35.3"
   centos_repo:
-    image: "localhost:5000/centos-repo:7.4.1708"
+    image: "localhost:5000/mirror-packages/centos-repo:7.5.1804"
+    # image: "localhost:5000/mirror-packages/centos-repo:7.4.1708"
     expose: [ 80 ]
     networks:
       network93:
