@@ -1,2 +1,2 @@
-git+https://github.com/gdraheim/docker-systemctl-replacement.git@master#egg=docker-systemctl-replacement
+-e git+https://github.com/gdraheim/docker-systemctl-replacement.git@master#egg=docker-systemctl-replacement
 
