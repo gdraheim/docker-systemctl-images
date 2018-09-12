@@ -2,7 +2,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2018 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.4.2363"
+__version__ = "1.4.2372"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -29,11 +29,10 @@ else:
     string_types = str
     xrange = range
 
-COVERAGE = False
-DEBUG_AFTER = os.environ.get("DEBUG_AFTER", "") or False
-DEBUG_REMOVE = os.environ.get("DEBUG_REMOVE", "") or False
-EXIT_WHEN_NO_MORE_PROCS = os.environ.get("EXIT_WHEN_NO_MORE_PROCS", "") or False
-EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("EXIT_WHEN_NO_MORE_SERVICES", "") or False
+COVERAGE = os.environ.get("SYSTEMCTL_COVERAGE", "")
+DEBUG_AFTER = os.environ.get("SYSTEMCTL_DEBUG_AFTER", "") or False
+EXIT_WHEN_NO_MORE_PROCS = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_PROCS", "") or False
+EXIT_WHEN_NO_MORE_SERVICES = os.environ.get("SYSTEMCTL_EXIT_WHEN_NO_MORE_SERVICES", "") or False
 
 # defaults for options
 _extra_vars = []
@@ -70,17 +69,13 @@ _preset_folder2 = "/var/run/systemd/system-preset"
 _preset_folder3 = "/usr/lib/systemd/system-preset"
 _preset_folder4 = "/lib/systemd/system-preset"
 _preset_folder9 = None
-_waitprocfile = 100
-_waitkillproc = 10
 
-MinimumSleep = 2
-MinimumWaitProcFile = 9
-MinimumWaitKillProc = 3
-DefaultWaitProcFile = 100
-DefaultWaitKillProc = 9
-DefaultTimeoutStartSec = 9 # officially 90
-DefaultTimeoutStopSec = 9  # officially 90
-DefaultMaximumTimeout = 200
+MinimumYield = 0.5
+MinimumTimeoutStartSec = 4
+MinimumTimeoutStopSec = 4
+DefaultTimeoutStartSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_START_SEC", 90)) # official value
+DefaultTimeoutStopSec = int(os.environ.get("SYSTEMCTL_TIMEOUT_STOP_SEC", 90))   # official value
+DefaultMaximumTimeout = int(os.environ.get("SYSTEMCTL_MAXIMUM_TIMEOUT", 200))   # overrides all other
 InitLoopSleep = int(os.environ.get("SYSTEMCTL_INITLOOP", 5))
 ProcMaxDepth = 100
 MaxLockWait = None # equals DefaultMaximumTimeout
@@ -164,14 +159,18 @@ def get_home():
     return os.path.expanduser("~")
 
 def _var(path):
+    """ assumes that the path starts with /var - and when
+        in --user mode it is moved to /run/user/1001/run/
+        or as a fallback path to /tmp/run-{user}/ so that
+        you may find /var/log in /tmp/run-{user}/log .."""
     if not _user_mode:
         return path
-    if path.startswith("/var"):
-        runtime = get_runtime_dir()
+    if path.startswith("/var"): 
+        runtime = get_runtime_dir() # $XDG_RUNTIME_DIR
         if not os.path.isdir(runtime):
             os.makedirs(runtime)
             os.chmod(runtime, 0o700)
-        return path.replace("/var", runtime, 1)
+        return re.sub("^(/var)?", get_runtime_dir(), path)
     return path
 
 
@@ -432,12 +431,12 @@ class UnitConfigParser:
 UnitParser = UnitConfigParser
 
 class UnitConf:
-    def __init__(self, data):
+    def __init__(self, data, module = None):
         self.data = data # UnitParser
         self.env = {}
         self.status = None
         self.masked = None
-        self.module = None
+        self.module = module
     def loaded(self):
         files = self.data.filenames()
         if self.masked:
@@ -498,44 +497,65 @@ class waitlock:
     def __enter__(self):
         try:
             lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+            lockname = os.path.basename(lockfile)
             self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
             for attempt in xrange(int(MaxLockWait or DefaultMaximumTimeout)):
                 try:
+                    logg.debug("[%s] %s. trying %s _______ ", os.getpid(), attempt, lockname)
                     fcntl.flock(self.opened, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     st = os.fstat(self.opened)
                     if not st.st_nlink:
-                        logg.info("lock got deleted, trying again")
+                        logg.debug("[%s] %s. %s got deleted, trying again", os.getpid(), attempt, lockname)
                         os.close(self.opened)
                         self.opened = os.open(lockfile, os.O_RDWR | os.O_CREAT, 0o600)
                         continue
                     content = "{ 'systemctl': %s, 'unit': '%s' }\n" % (os.getpid(), self.unit)
                     os.write(self.opened, content.encode("utf-8"))
-                    logg.debug("holding %s", lockfile)
+                    logg.debug("[%s] %s. holding lock on %s", os.getpid(), attempt, lockname)
                     return True
                 except BlockingIOError as e:
                     whom = os.read(self.opened, 4096)
                     os.lseek(self.opened, 0, os.SEEK_SET)
-                    logg.info("(%s) systemctl locked by %s", attempt, whom.rstrip())
-                    time.sleep(1)
+                    logg.info("[%s] %s. systemctl locked by %s", os.getpid(), attempt, whom.rstrip())
+                    time.sleep(1) # until MaxLockWait
                     continue
-            logg.error("not able to get the lock to %s", self.unit or "global")
+            logg.error("[%s] not able to get the lock to %s", os.getpid(), lockname)
         except Exception as e:
-            logg.warning("oops %s, %s", str(type(e)), e)
+            logg.warning("[%s] oops %s, %s", os.getpid(), str(type(e)), e)
         #TODO# raise Exception("no lock for %s", self.unit or "global")
         return False
     def __exit__(self, type, value, traceback):
         try:
             os.lseek(self.opened, 0, os.SEEK_SET)
             os.ftruncate(self.opened, 0)
-            if DEBUG_REMOVE: 
+            if "removelockfile" in COVERAGE: # actually an optional implementation
                 lockfile = os.path.join(self.lockfolder, str(self.unit or "global") + ".lock")
+                lockname = os.path.basename(lockfile)
                 os.unlink(lockfile) # ino is kept allocated because opened by this process
-                logg.info("lockfile removed (%s)", lockfile)
+                logg.debug("[%s] lockfile removed for %s", os.getpid(), lockname)
             fcntl.flock(self.opened, fcntl.LOCK_UN)
             os.close(self.opened) # implies an unlock but that has happend like 6 seconds later
             self.opened = None
         except Exception as e:
             logg.warning("oops, %s", e)
+
+def must_have_failed(waitpid, cmd):
+    # found to be needed on ubuntu:16.04 to match test result from ubuntu:18.04 and other distros
+    # .... I have tracked it down that python's os.waitpid() returns an exitcode==0 even when the
+    # .... underlying process has actually failed with an exitcode<>0. It is unknown where that
+    # .... bug comes from but it seems a bit serious to trash some very basic unix functionality.
+    # .... Essentially a parent process does not get the correct exitcode from its own children.
+    if cmd and cmd[0] == "/bin/kill":
+        pid = None
+        for arg in cmd[1:]:
+            if not arg.startswith("-"):
+                pid = arg
+        if pid is None: # unknown $MAINPID
+            if not waitpid.returncode:
+                logg.error("waitpid %s did return %s => correcting as 11", cmd, waitpid.returncode)
+            waitpidNEW = collections.namedtuple("waitpidNEW", ["pid", "returncode", "signal" ])
+            waitpid = waitpidNEW(waitpid.pid, 11, waitpid.signal)
+    return waitpid
 
 def subprocess_waitpid(pid):
     waitpid = collections.namedtuple("waitpid", ["pid", "returncode", "signal" ])
@@ -723,11 +743,8 @@ class Systemctl:
         self._unit_property = _unit_property
         self._unit_type = _unit_type
         # some common constants that may be changed
-        self._notify_socket_folder = _var(_notify_socket_folder)
         self._pid_file_folder = _pid_file_folder 
         self._journal_log_folder = _journal_log_folder
-        self._WaitProcFile = DefaultWaitProcFile
-        self._WaitKillProc = DefaultWaitKillProc
         # and the actual internal runtime state
         self._loaded_file_sysv = {} # /etc/init.d/name => config data
         self._loaded_file_sysd = {} # /etc/systemd/system/name.service => config data
@@ -908,9 +925,8 @@ class Systemctl:
                         continue
                     if name.endswith(".conf"):
                         unit.read_sysd(path)
-        conf = UnitConf(unit)
+        conf = UnitConf(unit, module)
         conf.masked = masked
-        conf.module = module
         self._loaded_file_sysd[path] = conf
         return conf
     def load_sysv_unit_conf(self, module): # -> conf?
@@ -921,7 +937,7 @@ class Systemctl:
             return self._loaded_file_sysv[path]
         unit = UnitParser()
         unit.read_sysv(path)
-        conf = UnitConf(unit)
+        conf = UnitConf(unit, module)
         self._loaded_file_sysv[path] = conf
         return conf
     def default_unit_conf(self, module): # -> conf
@@ -932,7 +948,7 @@ class Systemctl:
         data.set("Unit", "Names", module)
         data.set("Unit", "Description", "NOT-FOUND "+module)
         # assert(not data.loaded())
-        return UnitConf(data)
+        return UnitConf(data, module)
     def get_unit_conf(self, module): # -> conf (conf | default-conf)
         """ accept that a unit does not exist 
             and return a unit conf that says 'not-loaded' """
@@ -1112,27 +1128,26 @@ class Systemctl:
         return pid
     def wait_pid_file(self, pid_file, timeout = None): # -> pid?
         """ wait some seconds for the pid file to appear and return the pid """
-        timeout = int(timeout or self._WaitProcFile)
-        timeout = max(timeout, MinimumWaitProcFile)        
+        timeout = int(timeout or (DefaultTimeoutStartSec/2))
+        timeout = max(timeout, (MinimumTimeoutStartSec))
         dirpath = os.path.dirname(os.path.abspath(pid_file))
         for x in xrange(timeout):
             if not os.path.isdir(dirpath):
-                self.sleep(1)
+                time.sleep(1) # until TimeoutStartSec/2
                 continue
             pid = self.read_pid_file(pid_file)
             if not pid:
-                self.sleep(1)
+                time.sleep(1) # until TimeoutStartSec/2
                 continue
             if not pid_exists(pid):
-                self.sleep(1)
+                time.sleep(1) # until TimeoutStartSec/2
                 continue
             return pid
         return None
-    def get_pid_file(self, unit): # -> text
+    def test_pid_file(self, unit): # -> text
         """ support for the testsuite.py """
         conf = self.get_unit_conf(unit)
-        pid_file = self.pid_file_from(conf)
-        return pid_file or ""
+        return self.pid_file_from(conf) or self.status_file_from(conf)
     def pid_file_from(self, conf, default = ""):
         """ get the specified pid file path (not a computed default) """
         return conf.data.get("Service", "PIDFile", default)
@@ -1255,7 +1270,7 @@ class Systemctl:
             conf.status[name] = value
     #
     def get_boottime(self):
-        if COVERAGE:
+        if "oldest" in COVERAGE:
             self.get_boottime_oldest()
         for pid in xrange(10):
             proc = "/proc/%s/status" % pid
@@ -1306,10 +1321,6 @@ class Systemctl:
             logg.warning("while reading file size: %s\n of %s", e, filename)
             return 0
     #
-    def sleep(self, seconds = None): 
-        """ just sleep """
-        seconds = seconds or MinimumSleep
-        time.sleep(seconds)
     def read_env_file(self, env_file): # -> generate[ (name,value) ]
         """ EnvironmentFile=<name> is being scanned """
         if env_file.startswith("-"):
@@ -1481,25 +1492,24 @@ class Systemctl:
         for part in shlex.split(cmd3):
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
         return newcmd
-    def path_journal_log(self, conf):
-        name = conf.filename() 
-        if not name:
-            return None
+    def path_journal_log(self, conf): # never None
+        """ /var/log/zzz.service.log or /var/log/default.unit.log """
+        filename = os.path.basename(conf.filename() or "")
+        unitname = (conf.name() or "default")+".unit"
+        name = filename or unitname
         log_folder = _var(self._journal_log_folder)
         if self._root:
             log_folder = os_path(self._root, log_folder)
         log_file = name.replace(os.path.sep,".") + ".log"
-        x = log_file.find(".", 1)
-        if x > 0: log_file = log_file[x+1:]
+        if log_file.startswith("."):
+            log_file = "dot."+log_file
         return os.path.join(log_folder, log_file)
     def open_journal_log(self, conf):
         log_file = self.path_journal_log(conf)
-        if log_file:
-            log_folder = os.path.dirname(log_file)
-            if not os.path.isdir(log_folder):
-                os.makedirs(log_folder)
-            return open(os.path.join(log_file), "a")
-        return open("/dev/null", "w")
+        log_folder = os.path.dirname(log_file)
+        if not os.path.isdir(log_folder):
+            os.makedirs(log_folder)
+        return open(os.path.join(log_file), "a")
     def chdir_workingdir(self, conf, check = True):
         """ if specified then change the working directory """
         # the original systemd will start in '/' even if User= is given
@@ -1522,15 +1532,21 @@ class Systemctl:
     def notify_socket_from(self, conf, socketfile = None):
         """ creates a notify-socket for the (non-privileged) user """
         NotifySocket = collections.namedtuple("NotifySocket", ["socket", "socketfile" ])
-        runuser = conf.data.get("Service", "User", "")
-        if runuser and os.geteuid() != 0:
-            logg.error("can not exec notify-service from non-root caller")
-            return None
-        notify_socket_folder = _var(self._notify_socket_folder)
+        notify_socket_folder = _var(_notify_socket_folder)
         if self._root:
             notify_socket_folder = os_path(self._root, notify_socket_folder)
-        notify_socket = os.path.join(notify_socket_folder, "notify." + str(conf.name() or "systemctl"))
+        notify_name = "notify." + str(conf.name() or "systemctl")
+        notify_socket = os.path.join(notify_socket_folder, notify_name)
         socketfile = socketfile or notify_socket
+        if len(socketfile) > 100:
+            logg.debug("https://unix.stackexchange.com/questions/367008/%s",
+                       "why-is-socket-path-length-limited-to-a-hundred-chars")
+            logg.debug("old notify socketfile (%s) = %s", len(socketfile), socketfile)
+            notify_socket_folder = re.sub("^(/var)?", get_runtime_dir(), _notify_socket_folder)
+            notify_name = notify_name[0:min(100-len(notify_socket_folder),len(notify_name))]
+            socketfile = os.path.join(notify_socket_folder, notify_name)
+            # occurs during testsuite.py for ~user/test.tmp/root path
+            logg.info("new notify socketfile (%s) = %s", len(socketfile), socketfile)
         try:
             if not os.path.isdir(os.path.dirname(socketfile)):
                 os.makedirs(os.path.dirname(socketfile))
@@ -1557,10 +1573,6 @@ class Systemctl:
                 logg.debug("socket.timeout %s", e)
         return result
     def wait_notify_socket(self, notify, timeout, pid = None):
-        if not notify:
-            logg.info("no $NOTIFY_SOCKET, waiting %s", timeout)
-            time.sleep(timeout)
-            return {}
         if not os.path.exists(notify.socketfile):
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
@@ -1573,11 +1585,11 @@ class Systemctl:
                 logg.info("dead PID %s", pid)
                 return results
             if not attempt: # first one
-                time.sleep(1)
+                time.sleep(1) # until TimeoutStartSec
                 continue
             result = self.read_notify_socket(notify, 1) # sleep max 1 second
             if not result: # timeout
-                time.sleep(1)
+                time.sleep(1) # until TimeoutStartSec
                 continue
             for name, value in self.read_env_part(result):
                 results[name] = value
@@ -1738,7 +1750,7 @@ class Systemctl:
                 self.write_status_from(conf, MainPID=forkpid)
                 logg.info("%s started PID %s", runs, forkpid)
                 env["MAINPID"] = str(forkpid)
-                time.sleep(1)
+                time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
@@ -1782,7 +1794,7 @@ class Systemctl:
                 mainpid = forkpid
                 self.write_status_from(conf, MainPID=mainpid)
                 env["MAINPID"] = str(mainpid)
-                time.sleep(1)
+                time.sleep(MinimumYield)
                 run = subprocess_testpid(forkpid)
                 if run.returncode is not None:
                     logg.info("%s stopped PID %s (%s) <-%s>", runs, run.pid, 
@@ -1833,7 +1845,7 @@ class Systemctl:
                 if pid:
                     env["MAINPID"] = str(pid)
             if not pid_file:
-                self.sleep()
+                time.sleep(MinimumTimeoutStartSec)
                 logg.warning("No PIDFile for forking %s", conf.filename())
                 status_file = self.status_file_from(conf)
                 self.set_status_from(conf, "ExecMainCode", returncode)
@@ -1886,7 +1898,7 @@ class Systemctl:
         shutil_setuid(runuser, rungroup)
         self.chdir_workingdir(conf, check = False)
         try:
-            if COVERAGE:
+            if "spawn" in COVERAGE:
                 os.spawnvpe(os.P_WAIT, cmd[0], cmd, env)
                 sys.exit(0)
             else: # pragma: nocover
@@ -1901,6 +1913,7 @@ class Systemctl:
         for cmd in conf.data.getlist("Service", "ExecStart", []):
             newcmd = self.exec_cmd(cmd, env, conf)
             return self.execve_from(conf, newcmd, env)
+        return None
     def stop_modules(self, *modules):
         """ [UNIT]... -- stop these units """
         found_all = True
@@ -2009,6 +2022,7 @@ class Systemctl:
                 if not forkpid:
                     self.execve_from(conf, newcmd, env) # pragma: nocover
                 run = subprocess_waitpid(forkpid)
+                run = must_have_failed(run, newcmd) # TODO: a workaround
                 # self.write_status_from(conf, MainPID=run.pid) # no ExecStop
                 if run.returncode and check:
                     returncode = run.returncode
@@ -2021,7 +2035,7 @@ class Systemctl:
                     self.clean_status_from(conf) # "inactive"
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                self.sleep()
+                time.sleep(MinimumTimeoutStopSec)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2053,7 +2067,7 @@ class Systemctl:
                     self.clean_pid_file_from(conf)
             else:
                 logg.info("%s sleep as no PID was found on Stop", runs)
-                self.sleep()
+                time.sleep(MinimumTimeoutStopSec)
                 pid = self.read_mainpid_from(conf, "")
                 if not pid or not pid_exists(pid) or pid_zombie(pid):
                     self.clean_pid_file_from(conf)
@@ -2089,7 +2103,7 @@ class Systemctl:
             if not self.is_active_pid(pid):
                 logg.info("wait for PID %s is done (%s.)", pid, x)
                 return True
-            time.sleep(1)
+            time.sleep(1) # until TimeoutStopSec
         logg.info("wait for PID %s failed (%s.)", pid, x)
         return False
     def reload_modules(self, *modules):
@@ -2166,7 +2180,7 @@ class Systemctl:
                     logg.error("Job for %s failed because the control process exited with error code. (%s)", 
                         conf.name(), run.returncode)
                     return False
-            self.sleep()
+            time.sleep(MinimumYield)
             return True
         elif runs in [ "oneshot" ]:
             logg.debug("ignored run type '%s' for reload", runs)
@@ -2414,7 +2428,7 @@ class Systemctl:
             if time.time() > started + timeout:
                 logg.info("service PIDs not stopped after %s", timeout)
                 break
-            self.sleep(1) # until timeout
+            time.sleep(1) # until TimeoutStopSec
         if dead or not doSendSIGKILL:
             logg.info("done kill PID %s %s", mainpid, dead and "OK")
             return dead
@@ -2423,12 +2437,12 @@ class Systemctl:
             for pid in pidlist:
                 if pid != mainpid:
                     self._kill_pid(pid, signal.SIGKILL)
-            self.sleep(1)
+            time.sleep(MinimumYield)
         # useKillMode in [ "control-group", "mixed", "process" ]
         if pid_exists(mainpid):
             logg.info("hard kill PID %s", mainpid)
             self._kill_pid(mainpid, signal.SIGKILL)
-            self.sleep(1)
+            time.sleep(MinimumYield)
         dead = not pid_exists(mainpid) or pid_zombie(mainpid)
         logg.info("done hard kill PID %s %s", mainpid, dead and "OK")
         return dead
@@ -2463,7 +2477,7 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
+                logg.error("Unit %s could not be found.", unit_of(module))
                 results += [ "unknown" ]
                 continue
             for unit in units:
@@ -2556,7 +2570,7 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Failed to get unit file state for %s: No such file", unit_of(module))
+                logg.error("Unit %s could not be found.", unit_of(module))
                 results += [ "unknown" ]
                 continue
             for unit in units:
@@ -2580,11 +2594,11 @@ class Systemctl:
         for module in modules:
             units = self.match_units([ module ])
             if not units:
-                logg.error("Failed to reset failed state of unit %s: No such file", unit_of(module))
+                logg.error("Unit %s could not be found.", unit_of(module))
                 return 1
             for unit in units:
                 if not self.reset_failed_unit(unit):
-                    logg.error("Failed to reset failed state of unit %s: not loaded", unit_of(module))
+                    logg.error("Unit %s could not be reset.", unit_of(module))
                     status = False
                 break
         return status
@@ -3548,7 +3562,7 @@ class Systemctl:
             yield "EnvironmentFile", " ".join(env_files)
     #
     igno_centos = [ "netconsole", "network" ]
-    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels*", "postfix*" ]
+    igno_opensuse = [ "raw", "pppoe", "*.local", "boot.*", "rpmconf*", "purge-kernels.service", "after-local.service", "postfix*" ]
     igno_ubuntu = [ "mount*", "umount*", "ondemand", "*.local" ]
     igno_always = [ "network*", "dbus", "systemd-*" ]
     def _ignored_unit(self, unit, ignore_list):
@@ -3683,6 +3697,10 @@ class Systemctl:
         """ stop units from default system level """
         logg.info("system halt requested - %s", arg)
         self.stop_system_default()
+        try: 
+            os.kill(1, signal.SIGQUIT) # exit init-loop on no_more_procs
+        except Exception as e:
+            logg.warning("SIGQUIT to init-loop on PID-1: %s", e)
     def system_get_default(self):
         """ get current default run-level"""
         current = self._default_target
@@ -3738,13 +3756,17 @@ class Systemctl:
         if self._now:
             return self.init_loop_until_stop([])
         if not modules:
-            # almost like 'systemctl --init default'
-            # but the container is exted when no_more_procs
-            self.exit_when_no_more_procs = True
+            # like 'systemctl --init default'
+            if self._now or self._show_all:
+                logg.debug("init default --now --all => no_more_procs")
+                self.exit_when_no_more_procs = True
             return self.start_system_default(init = True)
         #
         # otherwise quit when all the init-services have died
         self.exit_when_no_more_services = True
+        if self._now or self._show_all:
+            logg.debug("init services --now --all => no_more_procs")
+            self.exit_when_no_more_procs = True
         found_all = True
         units = []
         for module in modules:
@@ -3805,20 +3827,20 @@ class Systemctl:
         """ this is the init-loop - it checks for any zombies to be reaped and
             waits for an interrupt. When a SIGTERM /SIGINT /Control-C signal
             is received then the signal name is returned. Any other signal will 
-            just raise an Exception like one would normally expect. """
+            just raise an Exception like one would normally expect. As a special
+            the 'systemctl halt' emits SIGQUIT which puts it into no_more_procs mode."""
+        signal.signal(signal.SIGQUIT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGQUIT"))
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
         self.start_log_files(units)
+        result = None
         while True:
             try:
                 time.sleep(InitLoopSleep)
                 self.read_log_files(units)
                 ##### the reaper goes round
                 running = self.system_reap_zombies()
-                if self.exit_when_no_more_procs:
-                    if not running:
-                        logg.info("no more procs - exit init-loop")
-                        break
+                # logg.debug("reap zombies - init-loop found %s running procs", running)
                 if self.exit_when_no_more_services:
                     active = False
                     for unit in units:
@@ -3829,15 +3851,25 @@ class Systemctl:
                     if not active:
                         logg.info("no more services - exit init-loop")
                         break
+                if self.exit_when_no_more_procs:
+                    if not running:
+                        logg.info("no more procs - exit init-loop")
+                        break
             except KeyboardInterrupt as e:
+                if e.args and e.args[0] == "SIGQUIT":
+                    # the original systemd puts a coredump on that signal.
+                    logg.info("SIGQUIT - switch to no more procs check")
+                    self.exit_when_no_more_procs = True
+                    continue
                 signal.signal(signal.SIGTERM, signal.SIG_DFL)
                 signal.signal(signal.SIGINT, signal.SIG_DFL)
-                return e.message or "STOPPED"
-        logg.debug("done - init loop")
+                logg.info("interrupted - exit init-loop")
+                result = e.message or "STOPPED"
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
-        return None
+        logg.debug("done - init loop")
+        return result
     def system_reap_zombies(self):
         """ check to reap children """
         selfpid = os.getpid()
@@ -3933,6 +3965,7 @@ class Systemctl:
     def show_help(self, *args):
         """[command] -- show this help
         """
+        lines = []
         okay = True
         prog = os.path.basename(sys.argv[0])
         if not args:
@@ -3949,9 +3982,9 @@ class Systemctl:
                    arg = name[:-len("_modules")].replace("_","-")
                 if arg:
                    argz[arg] = name
-            print(prog, "command","[options]...")
-            print("")
-            print("Commands:")
+            lines.append("%s command [options]..." % prog)
+            lines.append("")
+            lines.append("Commands:")
             for arg in sorted(argz):
                 name = argz[arg]
                 method = getattr(self, name)
@@ -3962,11 +3995,11 @@ class Systemctl:
                 elif not self._show_all:
                     continue # pragma: nocover
                 firstline = doc.split("\n")[0]
+                doc_text = firstline.strip()
                 if "--" not in firstline:
-                    print(" ",arg,"--", firstline.strip())
-                else:
-                    print(" ", arg, firstline.strip())
-            return True
+                    doc_text = "-- " + doc_text
+                lines.append(" %s %s" % (arg, firstline.strip()))
+            return lines
         for arg in args:
             arg = arg.replace("-","_")
             func1 = getattr(self.__class__, arg+"_modules", None)
@@ -3978,20 +4011,20 @@ class Systemctl:
                 print("error: no such command '%s'" % arg)
                 okay = False
             else:
+                doc_text = "..."
                 doc = getattr(func, "__doc__", None)
-                if doc is None:
+                if doc:
+                    doc_text = doc.replace("\n","\n\n", 1).strip()
+                    if "--" not in doc_text:
+                        doc_text = "-- " + doc_text
+                else: 
                     logg.debug("__doc__ of %s is none", func_name)
-                    if not self._show_all:
-                        continue
-                    print(prog, arg, "...")
-                elif "--" in doc:
-                    print(prog, arg, doc.replace("\n","\n\n", 1))
-                else:
-                    print(prog, arg, "--", doc.replace("\n","\n\n", 1))
+                    if not self._show_all: continue
+                lines.append("%s %s %s" % (prog, arg, doc_text))
         if not okay:
             self.show_help()
             return False
-        return True
+        return lines
     def systemd_version(self):
         """ the the version line for systemd compatibility """
         return "systemd 219\n  - via systemctl.py %s" % __version__
@@ -4135,8 +4168,8 @@ if __name__ == "__main__":
     _o.add_option("--no-pager", action="store_true",
         help="Do not pipe output into pager (ignored)")
     #
-    _o.add_option("--coverage", action="store_true", default=COVERAGE,
-        help="..support for coverage (no execve)")
+    _o.add_option("--coverage", metavar="OPTIONLIST", default=COVERAGE,
+        help="..support for coverage (e.g. spawn,oldest,sleep) [%default]")
     _o.add_option("-e","--extra-vars", "--environment", metavar="NAME=VAL", action="append", default=[],
         help="..override settings in the syntax of 'Environment='")
     _o.add_option("-v","--verbose", action="count", default=0,
@@ -4152,6 +4185,14 @@ if __name__ == "__main__":
     logg.setLevel(max(0, logging.ERROR - 10 * opt.verbose))
     #
     COVERAGE = opt.coverage
+    if "sleep" in COVERAGE:
+         MinimumTimeoutStartSec = 7
+         MinimumTimeoutStopSec = 7
+    if "quick" in COVERAGE:
+         MinimumTimeoutStartSec = 4
+         MinimumTimeoutStopSec = 4
+         DefaultTimeoutStartSec = 9
+         DefaultTimeoutStopSec = 9
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
