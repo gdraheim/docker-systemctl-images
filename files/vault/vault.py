@@ -43,17 +43,17 @@ VERBOSE=1
 def decode(text):
     if text.startswith("{B64}:"):
         data = text[len("{B64}:"):]
-        return base64.b64decode(data)
+        return base64.b64decode(data).decode("utf-8")
     if text.startswith("{B}:"):
         data = text[len("{B}:"):]
-        return base64.b64decode(data[::-1].replace("$","="))
+        return base64.b64decode(data[::-1].replace("$","=")).decode("utf-8")
     return text
 def encode(text, using="B"):
     if using in ["B64"]:
-        data = base64.b64encode(text)
+        data = base64.b64encode(text.encode("utf-8")).decode("ascii")
         return "{%s}:%s" % (using, data)
     if using in ["B"]:
-        data = base64.b64encode(text)
+        data = base64.b64encode(text.encode("utf-8")).decode("ascii")
         return "{%s}:%s" % (using, data[::-1].replace("=","$"))
     return text
 

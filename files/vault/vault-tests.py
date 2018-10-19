@@ -9,6 +9,8 @@ import subprocess
 import logging
 from fnmatch import fnmatchcase as fnmatch
 
+logg = logging.getLogger("tests")
+
 def sh(cmd, shell = True):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
     proc.wait()
@@ -30,11 +32,15 @@ class VaultTests(unittest.TestCase):
         """ any 'login' possible """
         cmd = vault() + "login foo"
         done = sh(cmd)
+        # logg.info("login stdout %s", done.stdout.read().strip())
+        # logg.info("login stderr %s", done.stderr.read().strip())
         self.assertEqual(done.returncode, 0)
     def test_002_write(self):
         """ do 'write' any value """
         cmd = vault() + "write secret/test/foo value=bar"
         done = sh(cmd)
+        # logg.info("write stdout %s", done.stdout.read().strip())
+        # logg.info("write stderr %s", done.stderr.read().strip())
         self.assertEqual(done.returncode, 0)
     def test_003_read(self):
         """ do 'read' that value """
