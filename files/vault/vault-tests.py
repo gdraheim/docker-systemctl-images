@@ -19,46 +19,56 @@ _python = "python"
 
 class VaultTests(unittest.TestCase):
     def test_000_clear(self):
+        """ reset test data """
         if os.path.exists(loginfile):
            os.remove(loginfile)
     def test_001_login(self):
+        """ any 'login' possible """
         cmd = "./vault.py login foo"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
     def test_002_write(self):
+        """ do 'write' any value """
         cmd = "./vault.py write secret/test/foo value=bar"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
     def test_003_read(self):
+        """ do 'read' that value """
         cmd = "./vault.py read secret/test/foo -field=value"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read(), "bar")
     def test_004_read_json(self):
+        """ do 'read' that value as json """
         cmd = "./vault.py read secret/test/foo -format=json"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read().strip(), '{"data": {"value": "bar"}}')
     def test_202_write(self):
+        """ do 'write' with expired """
         cmd = "./vault.py write secret/test/bar value=foo expired=next"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
     def test_203_read(self):
+        """ do 'read' that value """
         cmd = "./vault.py read secret/test/bar -field=value"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read(), "foo")
     def test_204_read_json(self):
+        """ do 'read' that value as json and find 'expired' """
         cmd = "./vault.py read secret/test/bar -format=json"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read().strip(), '{"data": {"expired": "next", "value": "foo"}}')
     def test_204_read_json(self):
+        """ do 'read' that value as table """
         cmd = "./vault.py read secret/test/bar -format=table"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read(), 'expired next\nvalue foo\n')
     def test_993_read_oldstyle(self): # OBSOLETE
+        """ do 'read' a value even without -field=value (some extra) """
         cmd = "./vault.py read secret/test/foo"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
