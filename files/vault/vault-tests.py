@@ -8,19 +8,12 @@ import inspect
 import unittest
 import subprocess
 import shutil
+import collections
 import logging
 from fnmatch import fnmatchcase as fnmatch
 
 logg = logging.getLogger("tests")
 
-def sh(cmd, env = {}, shell = True):
-    envs = os.environ.copy()
-    envs.update(env)
-    print (envs)
-    print (env)
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, env = envs)
-    proc.wait()
-    return proc # .stdin / .stderr / .returncode
 
 loginfile = "~/.vault_token"
 _vault_py = "./vault.py"
@@ -35,6 +28,13 @@ def get_caller_name():
 def get_caller_caller_name():
     frame = inspect.currentframe().f_back.f_back.f_back
     return frame.f_code.co_name
+def sh(cmd, env = {}, shell = True):
+    Shell = collections.namedtuple("Shell", ["returncode", "stdout", "stderr" ])
+    envs = os.environ.copy()
+    envs.update(env)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, env = envs)
+    proc.wait()
+    return Shell(proc.returncode, proc.stdout.read(), proc.stderr.read())
 
 class VaultTests(unittest.TestCase):
     def caller_testname(self):
@@ -75,8 +75,8 @@ class VaultTests(unittest.TestCase):
                 "VAULT_DATAFILE": tmp + "/vault_data.ini" }
         cmd = vault() + "config"
         done = sh(cmd, env)
-        logg.info("login stdout %s", done.stdout.read().strip())
-        logg.info("login stderr %s", done.stderr.read().strip())
+        logg.info("login stdout %s", done.stdout.strip())
+        logg.info("login stderr %s", done.stderr.strip())
         self.assertEqual(done.returncode, 0)
         self.rm_testdir()
     def test_101_login(self):
@@ -85,8 +85,8 @@ class VaultTests(unittest.TestCase):
         env = { "VAULT_LOGINFILE": tmp + "/vault_token" }
         cmd = vault() + "login foo -v -v"
         done = sh(cmd, env)
-        # logg.info("login stdout %s", done.stdout.read().strip())
-        # logg.info("login stderr %s", done.stderr.read().strip())
+        # logg.info("login stdout %s", done.stdout.strip())
+        # logg.info("login stderr %s", done.stderr.strip())
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(tmp + "/vault_token"))
         self.rm_testdir()
@@ -94,21 +94,21 @@ class VaultTests(unittest.TestCase):
         """ do 'write' any value """
         cmd = vault() + "write secret/test/foo value=bar"
         done = sh(cmd)
-        # logg.info("write stdout %s", done.stdout.read().strip())
-        # logg.info("write stderr %s", done.stderr.read().strip())
+        # logg.info("write stdout %s", done.stdout.strip())
+        # logg.info("write stderr %s", done.stderr.strip())
         self.assertEqual(done.returncode, 0)
     def test_103_read(self):
         """ do 'read' that value """
         cmd = vault() + "read secret/test/foo -field=value"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-        self.assertEqual(done.stdout.read(), "bar")
+        self.assertEqual(done.stdout, "bar")
     def test_104_read_json(self):
         """ do 'read' that value as json """
         cmd = vault() + "read secret/test/foo -format=json"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-        self.assertEqual(done.stdout.read().strip(), '{"data": {"value": "bar"}}')
+        self.assertEqual(done.stdout.strip(), '{"data": {"value": "bar"}}')
     def test_302_write(self):
         """ do 'write' with expired """
         cmd = vault() + "write secret/test/bar value=foo expired=next"
@@ -119,25 +119,25 @@ class VaultTests(unittest.TestCase):
         cmd = vault() + "read secret/test/bar -field=value"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-        self.assertEqual(done.stdout.read(), "foo")
+        self.assertEqual(done.stdout.strip(), "foo")
     def test_304_read_json(self):
         """ do 'read' that value as json and find 'expired' """
         cmd = vault() + "read secret/test/bar -format=json"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-        self.assertEqual(done.stdout.read().strip(), '{"data": {"expired": "next", "value": "foo"}}')
+        self.assertEqual(done.stdout.strip(), '{"data": {"expired": "next", "value": "foo"}}')
     def test_305_read_json(self):
         """ do 'read' that value as table """
         cmd = vault() + "read secret/test/bar -format=table"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-        self.assertEqual(done.stdout.read(), 'expired next\nvalue foo\n')
+        self.assertEqual(done.stdout, 'expired next\nvalue foo\n')
     def test_443_read_oldstyle(self): # OBSOLETE
         """ do 'read' a value even without -field=value (some extra) """
         cmd = vault() + "read secret/test/foo"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-        self.assertEqual(done.stdout.read(), "bar\n")
+        self.assertEqual(done.stdout, "bar\n")
 
 if __name__ == "__main__":
     from optparse import OptionParser
