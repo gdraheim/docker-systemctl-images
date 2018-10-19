@@ -1,8 +1,12 @@
 #! /usr/bin/python
+""" testing vault.py, the script that mimics a minimized
+    version of HashiCorp Vault's client tool 'vault' """
 
 import os
 import unittest
 import subprocess
+import logging
+from fnmatch import fnmatchcase as fnmatch
 
 def sh(cmd, shell = True):
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
@@ -10,6 +14,8 @@ def sh(cmd, shell = True):
     return proc # .stdin / .stderr / .returncode
 
 loginfile = "~/.vault_token"
+_vault_py = "./vault.py"
+_python = "python"
 
 class VaultTests(unittest.TestCase):
     def test_000_clear(self):
@@ -59,4 +65,65 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.stdout.read(), "bar\n")
 
 if __name__ == "__main__":
-    unittest.main()
+    from optparse import OptionParser
+    _o = OptionParser("%prog [options] test*",
+       epilog=__doc__.strip().split("\n")[0])
+    _o.add_option("-v","--verbose", action="count", default=0,
+       help="increase logging level [%default]")
+    _o.add_option("--with", metavar="FILE", dest="vault_py", default=_vault_py,
+       help="systemctl.py file to be tested (%default)")
+    _o.add_option("-p","--python", metavar="EXE", default=_python,
+       help="use another python execution engine [%default]")
+    _o.add_option("-l","--logfile", metavar="FILE", default="",
+       help="additionally save the output log to a file [%default]")
+    _o.add_option("--xmlresults", metavar="FILE", default=None,
+       help="capture results as a junit xml file [%default]")
+    opt, args = _o.parse_args()
+    logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
+    _vault_py = opt.vault_py
+    _python = opt.python
+    #
+    logfile = None
+    if opt.logfile:
+        if os.path.exists(opt.logfile):
+           os.remove(opt.logfile)
+        logfile = logging.FileHandler(opt.logfile)
+        logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
+        logging.getLogger().addHandler(logfile)
+        logg.info("log diverted to %s", opt.logfile)
+    xmlresults = None
+    if opt.xmlresults:
+        if os.path.exists(opt.xmlresults):
+           os.remove(opt.xmlresults)
+        xmlresults = open(opt.xmlresults, "w")
+        logg.info("xml results into %s", opt.xmlresults)
+    # unittest.main()
+    suite = unittest.TestSuite()
+    if not args: args = [ "test_*" ]
+    for arg in args:
+        for classname in sorted(globals()):
+            if not classname.endswith("Tests"):
+                continue
+            testclass = globals()[classname]
+            for method in sorted(dir(testclass)):
+                if "*" not in arg: arg += "*"
+                if arg.startswith("_"): arg = arg[1:]
+                if fnmatch(method, arg):
+                    suite.addTest(testclass(method))
+    # select runner
+    if not logfile:
+        if xmlresults:
+            import xmlrunner
+            Runner = xmlrunner.XMLTestRunner
+            result = Runner(xmlresults).run(suite)
+        else:
+            Runner = unittest.TextTestRunner
+            result = Runner(verbosity=opt.verbose).run(suite)
+    else:
+        Runner = unittest.TextTestRunner
+        if xmlresults:
+            import xmlrunner
+            Runner = xmlrunner.XMLTestRunner
+        result = Runner(logfile.stream, verbosity=opt.verbose).run(suite)
+    if not result.wasSuccessful():
+        sys.exit(1)
