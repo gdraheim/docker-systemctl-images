@@ -63,6 +63,9 @@ class VaultTests(unittest.TestCase):
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
+    def envs(self, tmp):
+        return { "VAULT_LOGINFILE": tmp + "/vault_token",
+                 "VAULT_DATAFILE": tmp + "/vault_data.ini" }
     #
     def test_000_clear(self):
         """ reset test data """
@@ -71,22 +74,35 @@ class VaultTests(unittest.TestCase):
     def test_001_config(self):
         """ allow for 'config' """
         tmp = self.testdir()
-        env = { "VAULT_LOGINFILE": tmp + "/vault_token",
-                "VAULT_DATAFILE": tmp + "/vault_data.ini" }
+        env = self.envs(tmp)
         cmd = vault() + "config"
         done = sh(cmd, env)
-        logg.info("login stdout %s", done.stdout.strip())
-        logg.info("login stderr %s", done.stderr.strip())
+        logg.debug(" stdout\n %s", done.stdout.strip())
+        logg.debug(" stderr\n %s", done.stderr.strip())
         self.assertEqual(done.returncode, 0)
+        # self.assertIn(env["VAULT_LOGINFILE"], done.stdout)
+        self.assertIn(env["VAULT_DATAFILE"], done.stdout)
+        self.rm_testdir()
+    def test_002_config_table(self):
+        """ allow for 'config' """
+        tmp = self.testdir()
+        env = self.envs(tmp)
+        cmd = vault() + "config -format=table"
+        done = sh(cmd, env)
+        logg.debug(" stdout\n%s", done.stdout.strip())
+        logg.debug(" stderr\n%s", done.stderr.strip())
+        self.assertEqual(done.returncode, 0)
+        self.assertIn(env["VAULT_LOGINFILE"], done.stdout)
+        self.assertIn(env["VAULT_DATAFILE"], done.stdout)
         self.rm_testdir()
     def test_101_login(self):
         """ any 'login' possible """
         tmp = self.testdir()
-        env = { "VAULT_LOGINFILE": tmp + "/vault_token" }
+        env = self.envs(tmp)
         cmd = vault() + "login foo -v -v"
         done = sh(cmd, env)
-        # logg.info("login stdout %s", done.stdout.strip())
-        # logg.info("login stderr %s", done.stderr.strip())
+        logg.debug(" stdout\n%s", done.stdout.strip())
+        logg.debug(" stderr\n%s", done.stderr.strip())
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(tmp + "/vault_token"))
         self.rm_testdir()
@@ -94,8 +110,8 @@ class VaultTests(unittest.TestCase):
         """ do 'write' any value """
         cmd = vault() + "write secret/test/foo value=bar"
         done = sh(cmd)
-        # logg.info("write stdout %s", done.stdout.strip())
-        # logg.info("write stderr %s", done.stderr.strip())
+        logg.debug(" stdout\n%s", done.stdout.strip())
+        logg.debug(" stderr\n%s", done.stderr.strip())
         self.assertEqual(done.returncode, 0)
     def test_103_read(self):
         """ do 'read' that value """
