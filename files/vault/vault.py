@@ -26,9 +26,8 @@ except:
 
 logg = logging.getLogger("vault")
 
-CONFIGDIR= "~/.config"
-DATAFILE = "vaultdata.ini"
-LOGINFILE = "~/.vault_token"
+DATAFILE = os.environ.get("VAULT_DATAFILE", "~/.config/vaultdata.ini")
+LOGINFILE = os.environ.get("VAULT_LOGINFILE", "~/.vault_token")
 
 VAULT_TOKEN=os.environ.get("VAULT_TOKEN", "")
 VAULT_ADDR=os.environ.get("VAULT_ADDR", "0.0.0.0:8200")
@@ -113,10 +112,10 @@ class Vault:
         if "value" not in values:
             logg.error("write op is missing value=setting")
             raise VaultError("write without value=setting")
-        configdir = os.path.expanduser(CONFIGDIR)
+        configfile = os.path.expanduser(DATAFILE)
+        configdir = os.path.dirname(configfile)
         if not os.path.isdir(configdir):
             os.makedirs(configdir)
-        configfile = os.path.join(configdir, DATAFILE)
         config = configparser.ConfigParser()
         if os.path.exists(configfile):
             config.read(configfile)
@@ -154,8 +153,8 @@ class Vault:
             values = self.read_local(key)
         self.show(values)
     def read_local(self, key):
-        configdir = os.path.expanduser(CONFIGDIR)
-        configfile = os.path.join(configdir, DATAFILE)
+        configfile = os.path.expanduser(DATAFILE)
+        configdir = os.path.dirname(configfile)
         if not os.path.exists(configfile):
             logg.error("no config file %s", configfile)
             raise VaultError("read missing config file")
@@ -218,8 +217,8 @@ class Vault:
         if key is None:
             logg.error("list op is missing key")
             raise VaultError("list without key")
-        configdir = os.path.expanduser(CONFIGDIR)
-        configfile = os.path.join(configdir, DATAFILE)
+        configfile = os.path.expanduser(DATAFILE)
+        configdir = os.path.dirname(configfile)
         if not os.path.exists(configfile):
             logg.error("no config file %s", configfile)
             raise VaultError("list missing config file")
@@ -251,8 +250,8 @@ class Vault:
         self.show(values)
     def configs(self):
         loginfile = os.path.expanduser(LOGINFILE)
-        configdir = os.path.expanduser(CONFIGDIR)
-        configfile = os.path.join(configdir, DATAFILE)
+        configfile = os.path.expanduser(DATAFILE)
+        configdir = os.path.dirname(configfile)
         values = { 
             "configdir": configdir, 
             "value": configfile,

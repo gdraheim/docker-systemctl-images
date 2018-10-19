@@ -4,15 +4,21 @@
 
 import os
 import sys
+import inspect
 import unittest
 import subprocess
+import shutil
 import logging
 from fnmatch import fnmatchcase as fnmatch
 
 logg = logging.getLogger("tests")
 
-def sh(cmd, shell = True):
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
+def sh(cmd, env = {}, shell = True):
+    envs = os.environ.copy()
+    envs.update(env)
+    print (envs)
+    print (env)
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, env = envs)
     proc.wait()
     return proc # .stdin / .stderr / .returncode
 
@@ -23,61 +29,110 @@ _python = "python"
 def vault():
     return "%s %s " % (_python, _vault_py)
 
+def get_caller_name():
+    frame = inspect.currentframe().f_back.f_back
+    return frame.f_code.co_name
+def get_caller_caller_name():
+    frame = inspect.currentframe().f_back.f_back.f_back
+    return frame.f_code.co_name
+
 class VaultTests(unittest.TestCase):
+    def caller_testname(self):
+        name = get_caller_caller_name()
+        x1 = name.find("_")
+        if x1 < 0: return name
+        x2 = name.find("_", x1+1)
+        if x2 < 0: return name
+        return name[:x2]
+    def testname(self, suffix = None):
+        name = self.caller_testname()
+        if suffix:
+            return name + "_" + suffix
+        return name
+    def testdir(self, testname = None, keep = False):
+        testname = testname or self.caller_testname()
+        newdir = "tmp/tmp."+testname
+        if os.path.isdir(newdir) and not keep:
+            shutil.rmtree(newdir)
+        if not os.path.isdir(newdir):
+            os.makedirs(newdir)
+        return newdir
+    def rm_testdir(self, testname = None):
+        testname = testname or self.caller_testname()
+        newdir = "tmp/tmp."+testname
+        if os.path.isdir(newdir):
+            shutil.rmtree(newdir)
+        return newdir
+    #
     def test_000_clear(self):
         """ reset test data """
         if os.path.exists(loginfile):
            os.remove(loginfile)
-    def test_001_login(self):
+    def test_001_config(self):
+        """ allow for 'config' """
+        tmp = self.testdir()
+        env = { "VAULT_LOGINFILE": tmp + "/vault_token",
+                "VAULT_DATAFILE": tmp + "/vault_data.ini" }
+        cmd = vault() + "config"
+        done = sh(cmd, env)
+        logg.info("login stdout %s", done.stdout.read().strip())
+        logg.info("login stderr %s", done.stderr.read().strip())
+        self.assertEqual(done.returncode, 0)
+        self.rm_testdir()
+    def test_101_login(self):
         """ any 'login' possible """
-        cmd = vault() + "login foo"
-        done = sh(cmd)
+        tmp = self.testdir()
+        env = { "VAULT_LOGINFILE": tmp + "/vault_token" }
+        cmd = vault() + "login foo -v -v"
+        done = sh(cmd, env)
         # logg.info("login stdout %s", done.stdout.read().strip())
         # logg.info("login stderr %s", done.stderr.read().strip())
         self.assertEqual(done.returncode, 0)
-    def test_002_write(self):
+        self.assertTrue(os.path.exists(tmp + "/vault_token"))
+        self.rm_testdir()
+    def test_102_write(self):
         """ do 'write' any value """
         cmd = vault() + "write secret/test/foo value=bar"
         done = sh(cmd)
         # logg.info("write stdout %s", done.stdout.read().strip())
         # logg.info("write stderr %s", done.stderr.read().strip())
         self.assertEqual(done.returncode, 0)
-    def test_003_read(self):
+    def test_103_read(self):
         """ do 'read' that value """
         cmd = vault() + "read secret/test/foo -field=value"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read(), "bar")
-    def test_004_read_json(self):
+    def test_104_read_json(self):
         """ do 'read' that value as json """
         cmd = vault() + "read secret/test/foo -format=json"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read().strip(), '{"data": {"value": "bar"}}')
-    def test_202_write(self):
+    def test_302_write(self):
         """ do 'write' with expired """
         cmd = vault() + "write secret/test/bar value=foo expired=next"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
-    def test_203_read(self):
+    def test_303_read(self):
         """ do 'read' that value """
         cmd = vault() + "read secret/test/bar -field=value"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read(), "foo")
-    def test_204_read_json(self):
+    def test_304_read_json(self):
         """ do 'read' that value as json and find 'expired' """
         cmd = vault() + "read secret/test/bar -format=json"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read().strip(), '{"data": {"expired": "next", "value": "foo"}}')
-    def test_204_read_json(self):
+    def test_305_read_json(self):
         """ do 'read' that value as table """
         cmd = vault() + "read secret/test/bar -format=table"
         done = sh(cmd)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.read(), 'expired next\nvalue foo\n')
-    def test_993_read_oldstyle(self): # OBSOLETE
+    def test_443_read_oldstyle(self): # OBSOLETE
         """ do 'read' a value even without -field=value (some extra) """
         cmd = vault() + "read secret/test/foo"
         done = sh(cmd)
