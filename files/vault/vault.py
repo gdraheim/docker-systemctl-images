@@ -7,6 +7,7 @@
 from __future__ import print_function
 
 import sys
+import ssl
 import base64
 import string
 import os.path
@@ -38,6 +39,7 @@ VAULT_FORMAT=None
 VAULT_FIELD=None
 VAULT_DEV_MODE=None
 VERBOSE=1
+VAULT_SSL_KEY=os.environ.get("VAULT_SSL_KEY", "server.pem")
 
 def decode(text):
     if text.startswith("{B64}:"):
@@ -192,7 +194,13 @@ class Vault:
             logg.debug(" curl -sSL -H 'X-Vault-Token: %s' %s", token, key_url)
         else:
             logg.debug(" curl -sSL %s", key_url)
-        resp = urllib2.urlopen(req)
+        ctx = None
+        if VAULT_SKIP_VERIFY in ["y", "yes", "true", "True"]:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            logg.debug("tls-skip-verify: ignore ssl cert validation")
+        resp = urllib2.urlopen(req, context=ctx)
         content = resp.read()
         values = json.loads(content)
         logg.debug("response %s", values)
@@ -265,11 +273,18 @@ class Vault:
         # hndler_class=BaseHTTPServer.BaseHTTPRequestHandler
         handler_class = VaultRequestHandler
         port = 8200
-        if VAULT_ADDR and ":" in VAULT_ADDR:
-            port = int(VAULT_ADDR.rsplit(":",1)[1])
+        addr = VAULT_ADDR
+        if addr and "://" not in addr:
+            addr = "http://"+addr
+        if addr and ":" in addr:
+            port = int(addr.rsplit(":",1)[1])
         server_address = ('', port)
         httpd = server_class(server_address, handler_class)
-        logg.warning("listen on %s", port)
+        if VAULT_ADDR.startswith("https:"):
+            httpd.socket = ssl.wrap_socket (httpd.socket, certfile=VAULT_SSL_KEY, server_side=True) 
+            logg.warning("https listen on %s", port)
+        else:
+            logg.warning("http listen on %s", port)
         httpd.serve_forever()
 
 class VaultRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):

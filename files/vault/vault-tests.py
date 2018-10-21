@@ -225,7 +225,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout, "bar\n")
         self.rm_testdir()
-    def test_500_vault_server(self): # OBSOLETE
+    def test_500_vault_server(self):
         """ do 'read' a value even without -field=value (some extra) """
         port = self.testport()
         cmd = vault() + "read -address=http://127.0.0.1:{port} secret/test500/foo -v -v -v -v"
@@ -238,6 +238,32 @@ class VaultTests(unittest.TestCase):
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         server = proc(run.format(**locals()), env)
         done = sh(cmd.format(**locals())) # no env! <<<<
+        self.show(done)
+        self.assertEqual(done.returncode, 0)
+        self.assertEqual(done.stdout, "bar\n")
+        self.rm_testdir()
+        server.terminate()
+    def test_501_vault_https_server(self): 
+        """ do 'read' a value even without -field=value (some extra) """
+        name = self.testname()
+        port = self.testport()
+        cmd = vault() + "read -address=https://127.0.0.1:{port} secret/test500/foo -v -v -v -v"
+        pre = vault() + "write secret/test500/foo value=bar"
+        run = vault() + "server -address=https://127.0.0.1:{port}"
+        gen = " openssl req -new -x509 -keyout {tmp}/{name}.pem -out {tmp}/{name}.pem -days 365 -nodes -batch"
+        tmp = self.testdir()
+        env = self.envs(tmp)
+        env["VAULT_SSL_KEY"] = "{tmp}/{name}.pem".format(**locals())
+        env2 = {}
+        env2["VAULT_SKIP_VERIFY"] = "yes"
+        done = sh(gen.format(**locals()), env)
+        self.assertEqual(done.returncode, 0)
+        self.assertTrue(os.path.exists(env["VAULT_SSL_KEY"]))
+        done = sh(pre.format(**locals()), env)
+        self.assertEqual(done.returncode, 0)
+        self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
+        server = proc(run.format(**locals()), env)
+        done = sh(cmd.format(**locals()), env2)
         self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout, "bar\n")
