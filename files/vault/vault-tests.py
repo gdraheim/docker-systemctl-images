@@ -66,6 +66,8 @@ class VaultTests(unittest.TestCase):
     def envs(self, tmp):
         return { "VAULT_LOGINFILE": tmp + "/vault_token",
                  "VAULT_DATAFILE": tmp + "/vault_data.ini" }
+    def show(self, done):
+        logg.debug("\n ==STDOUT==\n%s\n ==STDERR==\n%s\n ==END==", done.stdout.strip(), done.stderr.strip())
     #
     def test_001_config(self):
         """ allow for 'config' """
@@ -73,7 +75,7 @@ class VaultTests(unittest.TestCase):
         env = self.envs(tmp)
         cmd = vault() + "config"
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         # self.assertIn(env["VAULT_LOGINFILE"], done.stdout)
         self.assertIn(env["VAULT_DATAFILE"], done.stdout)
@@ -84,7 +86,7 @@ class VaultTests(unittest.TestCase):
         env = self.envs(tmp)
         cmd = vault() + "config -format=table"
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertIn(env["VAULT_LOGINFILE"], done.stdout)
         self.assertIn(env["VAULT_DATAFILE"], done.stdout)
@@ -95,7 +97,7 @@ class VaultTests(unittest.TestCase):
         tmp = self.testdir()
         env = self.envs(tmp)
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_LOGINFILE"]))
         value = open(env["VAULT_LOGINFILE"]).read()
@@ -107,7 +109,7 @@ class VaultTests(unittest.TestCase):
         tmp = self.testdir()
         env = self.envs(tmp)
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         self.rm_testdir()
@@ -121,7 +123,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout, "bar")
         self.rm_testdir()
@@ -135,7 +137,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.strip(), '{"data": {"value": "bar"}}')
         self.rm_testdir()
@@ -149,7 +151,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.rm_testdir()
     def test_303_read(self):
@@ -162,7 +164,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.strip(), "foo")
         self.rm_testdir()
@@ -176,7 +178,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout.strip(), '{"data": {"expired": "next", "value": "foo"}}')
         self.rm_testdir()
@@ -190,7 +192,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout, 'expired next\nvalue foo\n')
         self.rm_testdir()
@@ -204,7 +206,7 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
         done = sh(cmd, env)
-        logg.debug("\n==STDOUT==\n%s\n==STDERR==\n%s==END==", done.stdout.strip(), done.stderr.strip())
+        self.show(done)
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout, "bar\n")
         self.rm_testdir()
