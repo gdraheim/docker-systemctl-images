@@ -61,8 +61,8 @@ def remote_address(address):
         return False
     if address.startswith("0."):
         return False
-    if address.startswith("127."):
-        return False
+    # if address.startswith("127."):
+    #     return False
     if address.startswith("local"):
         return False
     return True
@@ -158,6 +158,7 @@ class Vault:
         if not os.path.exists(configfile):
             logg.error("no config file %s", configfile)
             raise VaultError("read missing config file")
+        logg.debug("datafile=%s", configfile)
         config = configparser.ConfigParser()
         config.read(configfile)
         section, name = key.rsplit("/",1)

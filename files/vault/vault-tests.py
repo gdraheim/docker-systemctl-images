@@ -4,6 +4,8 @@
 
 import os
 import sys
+import re
+import time
 import inspect
 import unittest
 import subprocess
@@ -32,9 +34,16 @@ def sh(cmd, env = {}, shell = True):
     Shell = collections.namedtuple("Shell", ["returncode", "stdout", "stderr" ])
     envs = os.environ.copy()
     envs.update(env)
+    logg.debug(" ... %s", cmd)
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell, env = envs)
     proc.wait()
     return Shell(proc.returncode, proc.stdout.read(), proc.stderr.read())
+def proc(cmd, env = {}, shell = True):
+    Shell = collections.namedtuple("Shell", ["returncode", "stdout", "stderr" ])
+    envs = os.environ.copy()
+    envs.update(env)
+    logg.debug(" ... %s", cmd)
+    return subprocess.Popen(cmd, shell=shell, env = envs)
 
 class VaultTests(unittest.TestCase):
     def caller_testname(self):
@@ -49,6 +58,12 @@ class VaultTests(unittest.TestCase):
         if suffix:
             return name + "_" + suffix
         return name
+    def testport(self, testname = None):
+        testname = testname or self.caller_testname()
+        m = re.match("\w*_(\d+).*", testname)
+        if m:
+            return int(m.group(1)) + 6000
+        return 6400 + (time.time() % 100)
     def testdir(self, testname = None, keep = False):
         testname = testname or self.caller_testname()
         newdir = "tmp/tmp."+testname
@@ -210,6 +225,24 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0)
         self.assertEqual(done.stdout, "bar\n")
         self.rm_testdir()
+    def test_500_vault_server(self): # OBSOLETE
+        """ do 'read' a value even without -field=value (some extra) """
+        port = self.testport()
+        cmd = vault() + "read -address=http://127.0.0.1:{port} secret/test500/foo -v -v -v -v"
+        pre = vault() + "write secret/test500/foo value=bar"
+        run = vault() + "server -address=http://127.0.0.1:{port}"
+        tmp = self.testdir()
+        env = self.envs(tmp)
+        done = sh(pre.format(**locals()), env)
+        self.assertEqual(done.returncode, 0)
+        self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
+        server = proc(run.format(**locals()), env)
+        done = sh(cmd.format(**locals())) # no env! <<<<
+        self.show(done)
+        self.assertEqual(done.returncode, 0)
+        self.assertEqual(done.stdout, "bar\n")
+        self.rm_testdir()
+        server.terminate()
 
 if __name__ == "__main__":
     from optparse import OptionParser
