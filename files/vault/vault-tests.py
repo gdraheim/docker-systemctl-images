@@ -18,7 +18,7 @@ logg = logging.getLogger("tests")
 
 
 loginfile = "~/.vault_token"
-_vault_py = "./vault.py"
+_vault_py = os.path.dirname(__file__)+"/vault.py"
 _python = "python"
 
 def vault():
@@ -82,7 +82,7 @@ class VaultTests(unittest.TestCase):
         return { "VAULT_LOGINFILE": tmp + "/vault_token",
                  "VAULT_DATAFILE": tmp + "/vault_data.ini" }
     def show(self, done):
-        logg.debug("\n ==STDOUT==\n%s\n ==STDERR==\n%s\n ==END==", done.stdout.strip(), done.stderr.strip())
+        logg.debug("\n ==STDOUT==\n%s\n ==STDERR==\n%s\n ==DONE %s==", done.stdout.strip(), done.stderr.strip(), done.returncode)
     #
     def test_001_config(self):
         """ allow for 'config' """
@@ -227,9 +227,10 @@ class VaultTests(unittest.TestCase):
         self.rm_testdir()
     def test_500_vault_server(self):
         """ do 'read' a value even without -field=value (some extra) """
+        name = self.testname()
         port = self.testport()
-        cmd = vault() + "read -address=http://127.0.0.1:{port} secret/test500/foo -v -v -v -v"
-        pre = vault() + "write secret/test500/foo value=bar"
+        cmd = vault() + "read -address=http://127.0.0.1:{port} secret/{name}/foo -v -v -v -v"
+        pre = vault() + "write secret/{name}/foo value=bar"
         run = vault() + "server -address=http://127.0.0.1:{port}"
         tmp = self.testdir()
         env = self.envs(tmp)
@@ -243,12 +244,40 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(done.stdout, "bar\n")
         self.rm_testdir()
         server.terminate()
-    def test_501_vault_https_server(self): 
+    def test_501_vault_https_server_missing_key(self): 
         """ do 'read' a value even without -field=value (some extra) """
         name = self.testname()
         port = self.testport()
-        cmd = vault() + "read -address=https://127.0.0.1:{port} secret/test500/foo -v -v -v -v"
-        pre = vault() + "write secret/test500/foo value=bar"
+        cmd = vault() + "read -address=https://127.0.0.1:{port} secret/{name}/foo -v -v -v -v"
+        pre = vault() + "write secret/{name}/foo value=bar"
+        run = vault() + "server -address=https://127.0.0.1:{port}"
+        tmp = self.testdir()
+        env = self.envs(tmp)
+        env2 = {}
+        env2["VAULT_SKIP_VERIFY"] = "yes"
+        done = sh(pre.format(**locals()), env)
+        self.show(done)
+        self.assertEqual(done.returncode, 0)
+        self.assertTrue(os.path.exists(env["VAULT_DATAFILE"]))
+        server = proc(run.format(**locals()), env)
+        logg.info("server %s", server.returncode)
+        time.sleep(1)
+        logg.info("server %s", server.returncode)
+        done2 = sh(cmd.format(**locals()), env2)
+        self.show(done2)
+        self.assertEqual(done2.returncode, 1)
+        self.assertIn("Connection refused", done2.stderr)
+        server.wait()
+        logg.info("server done %s", server.returncode)
+        self.assertEqual(server.returncode, 1)
+        self.rm_testdir()
+        # server.terminate()
+    def test_502_vault_https_server(self): 
+        """ do 'read' a value even without -field=value (some extra) """
+        name = self.testname()
+        port = self.testport()
+        cmd = vault() + "read -address=https://127.0.0.1:{port} secret/{name}/foo -v -v -v -v"
+        pre = vault() + "write secret/{name}/foo value=bar"
         run = vault() + "server -address=https://127.0.0.1:{port}"
         gen = " openssl req -new -x509 -keyout {tmp}/{name}.pem -out {tmp}/{name}.pem -days 365 -nodes -batch"
         tmp = self.testdir()

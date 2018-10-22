@@ -39,7 +39,7 @@ VAULT_FORMAT=None
 VAULT_FIELD=None
 VAULT_DEV_MODE=None
 VERBOSE=1
-VAULT_SSL_KEY=os.environ.get("VAULT_SSL_KEY", "server.pem")
+VAULT_SSL_KEY=os.environ.get("VAULT_SSL_KEY", "")
 
 def decode(text):
     if text.startswith("{B64}:"):
@@ -275,12 +275,17 @@ class Vault:
         port = 8200
         addr = VAULT_ADDR
         if addr and "://" not in addr:
-            addr = "http://"+addr
+            if VAULT_SSL_KEY:
+                addr = "https://"+addr
+            else:
+                addr = "http://"+addr
         if addr and ":" in addr:
             port = int(addr.rsplit(":",1)[1])
         server_address = ('', port)
         httpd = server_class(server_address, handler_class)
         if VAULT_ADDR.startswith("https:"):
+            if not VAULT_SSL_KEY:
+                raise VaultError("server as https: but no VAULT_SSL_KEY given")
             httpd.socket = ssl.wrap_socket (httpd.socket, certfile=VAULT_SSL_KEY, server_side=True) 
             logg.warning("https listen on %s", port)
         else:
