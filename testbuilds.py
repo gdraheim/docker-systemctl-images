@@ -1077,8 +1077,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "sleep 5; docker exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         # cmd = "sleep 5; http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_775_centos_cntlm_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+            THEN we can create an image with an cntlm service 
+                 being installed and enabled.
+            In this case the container is run in --user mode."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="centos-cntlm-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; docker exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        # cmd = "http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))

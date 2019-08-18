@@ -18,7 +18,11 @@ RUN : \
 RUN : \
   ; mkdir /etc/systemd/system/cntlm.service.d \
   ; { echo "[Service]"; echo "PIDFile=/run/cntlm/cntlmd.pid"; } \
-        > /etc/systemd/system/cntlm.service.d/pidfile.conf
+        > /etc/systemd/system/cntlm.service.d/pidfile.conf \
+  ; { echo "[Service]"; echo "User=cntlm"; } \
+        > /etc/systemd/system/cntlm.service.d/user.conf \
+  ; chown cntlm /etc/cntlm.conf
 
 RUN systemctl enable cntlm
 CMD /usr/bin/systemctl
+USER cntlm
