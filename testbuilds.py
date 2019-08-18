@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.2354"
+__version__ = "1.4.3.3.3325"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -674,6 +674,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ls {runtime}postgres/run"
+        sh____(cmd.format(**locals()))
         cmd = "docker cp {testname}:{runtime}postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} ps axu"

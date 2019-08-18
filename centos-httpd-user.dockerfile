@@ -1,27 +1,31 @@
 FROM centos:7.5.1804
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.3.2177"
+      __version__="1.4.3325"
+ARG PORT=8080
+EXPOSE $PORT
 
 COPY files/docker/systemctl.py /usr/bin/systemctl
 RUN yum install -y httpd httpd-tools
 COPY files/docker/systemctl.py /usr/bin/systemctl
-RUN systemctl enable httpd
+
 RUN echo TEST_OK > /var/www/html/index.html
+RUN sed -i "s|^Listen .*|Listen $PORT|" /etc/httpd/conf/httpd.conf
 
-RUN sed -i 's|^Listen .*|Listen 8080|' /etc/httpd/conf/httpd.conf
-RUN sed -i "/Type=notify/a\\User=apache" /usr/lib/systemd/system/httpd.service
+RUN : \
+  ; mkdir /usr/lib/systemd/system/httpd.service.d \
+  ; { echo "[Service]" ; echo "User=apache"; } \
+    > /usr/lib/systemd/system/httpd.service.d/usermode.conf
+RUN : \
+  ; chown -R apache /etc/httpd \
+  ; chown -R apache /usr/share/httpd \
+  ; chown -R apache /run/httpd \
+  ; : chown -R apache /var/log/httpd \
+  ; rm /etc/httpd/logs \
+  ; mkdir /var/www/logs \
+  ; ln -s /var/www/logs /etc/httpd \
+  ; chown -R apache /var/www
 
-RUN chown -R apache /etc/httpd
-RUN chown -R apache /usr/share/httpd
-RUN chown -R apache /run/httpd
-# RUN chown -R apache /var/log/httpd
-RUN rm /etc/httpd/logs
-RUN mkdir /var/www/logs
-RUN ln -s /var/www/logs /etc/httpd
-
-RUN chown -R apache /var/www
-
-EXPOSE 8080
-USER apache
+RUN systemctl enable httpd
 CMD /usr/bin/systemctl
+USER apache
