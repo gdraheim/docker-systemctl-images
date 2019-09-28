@@ -1,0 +1,82 @@
+- hosts: localhost
+  vars:
+     base_image: "centos:7.5.1804"
+     base_command: "sleep infinity"
+     docker_repository: "localhost:5000"
+     docker_prefix: "systemctl/elasticsearch"
+  roles:
+    - role: docker_distro_version
+      image: "{{ base_image }}"
+    - role: docker_distro_packages_mirror
+  tasks:
+    - debug: var=distro_packages_mirror_name
+    - assert:
+        that: 
+          - 'distro_vendor == "centos"'
+          - 'distro_version == "7.5.1804"'
+          - 'distro_packages_mirror_name == "mirror-packages/centos-repo:7.5.1804"'
+          - '"--add-host" in distro_packages_mirror_add_hosts'
+      when: ' base_image == "centos:7.5.1804"'
+    - name: name of setup container
+      set_fact:
+         setup_container: "{{ docker_prefix.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+    - debug: var=setup_container
+    - name: remove setup container
+      command: docker rm -f '{{ setup_container }}'
+      ignore_errors: yes
+    - name: start setup container
+      command: docker run -d {{ distro_packages_mirror_add_hosts }} \
+                     --name "{{ setup_container }}" "{{ base_image }}" {{base_command}}
+    - name: fixup setup container
+      command: docker exec "{{ setup_container }}" zypper install -y python python-xml
+      when: 'distro_os_family == "Suse"'
+    - name: attach setup container
+      add_host:
+        hostname: '{{ setup_container }}'
+        ansible_connection: 'docker'
+        ansible_user: "root"
+        # ansible_python_interpreter: /usr/bin/python
+    - name: gather facts on it
+      delegate_to: '{{ setup_container }}'
+      setup:
+        gather_subset: "all"
+    - name: setup the container
+      delegate_to: '{{ setup_container }}'
+      import_role: 
+         name: "elasticsearch"
+    - name: software package
+      set_fact:
+        software_package: '{{ elasticsearch_rpm.split("-")[0] }}'
+    - name: software version
+      delegate_to: '{{ setup_container }}'
+      shell: "rpm -q --info {{ software_package }} | sed -e '/Version *:/!d' -e 's/.*: *//' -e q"
+      register: software_version_found
+    - debug: var=software_version_found
+    - name: image version
+      set_fact:
+         image_version: "{{ software_version_found.stdout | trim }}"
+    - debug: var=image_version
+    - name: image name
+      set_fact:
+         image_name3: '{{ docker_repository + "/" + docker_prefix + "/" + distro_vendor + "/" + distro_version }}'
+         image_name2: '{{ docker_repository + "/" + docker_prefix + "/" + distro_vendor }}'
+         image_name1: '{{ docker_repository + "/" + docker_prefix }}'
+    - name: commit the container
+      command: docker commit \
+        -c 'CMD ["/usr/bin/systemctl"]' \
+        '{{ setup_container }}' '{{ image_name3 }}:{{ image_version }}'
+    - name: latest image 3
+      command: docker tag \
+         '{{ image_name3 }}:{{ image_version }}' '{{ image_name3 }}'
+    - name: newest image 2
+      command: docker tag \
+         '{{ image_name3 }}:{{ image_version }}' '{{ image_name2 }}:{{ image_version}}'
+    - name: latest image 2
+      command: docker tag \
+         '{{ image_name2 }}:{{ image_version }}' '{{ image_name2 }}'
+    - name: remove setup container
+      command: docker rm -f '{{ setup_container }}'
+      ignore_errors: yes
+    - name: cleanup images
+      shell: 'docker images --filter=dangling=true --format "{{ "{{" }} .ID {{ "}}" }}" | xargs --no-run-if-empty docker rmi'
+      ignore_errors: yes

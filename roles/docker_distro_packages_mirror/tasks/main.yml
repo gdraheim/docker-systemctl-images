@@ -1,0 +1,82 @@
+- debug: var=distro_vendor
+- debug: var=distro_version
+- name: distro packages mirror name
+  set_fact:
+    distro_packages_mirror_name: '{{ "mirror-packages/" + distro_vendor + "-repo:" + distro_version }}'
+- name: distro packages mirror image
+  set_fact:
+    distro_packages_mirror_image: '{{ distro_packages_mirror_repository + "/" + distro_packages_mirror_name }}'
+    distro_packages_mirror_container: '{{ distro_vendor + "-repo-" + distro_version }}'
+- name: distro packages mirror image check
+  command: docker images --quiet '{{distro_packages_mirror_image}}'
+  register: distro_packages_mirror_image_check
+- name: distro packages mirror container info
+  command: docker inspect '{{distro_packages_mirror_container}}'
+  register: distro_packages_mirror_container_info
+  ignore_errors: yes
+- name: distro packages mirror container found
+  set_fact:
+     distro_packages_mirror_container_found: "{{distro_packages_mirror_container_info.rc == 0}}"
+     distro_packages_mirror_container_running: no
+- name: distro packages mirror container vars
+  set_fact:
+     distro_packages_mirror_container_vars: "{{distro_packages_mirror_container_info.stdout | from_json }}"
+  when: 'distro_packages_mirror_container_found'
+- name: distro packages mirror container status
+  set_fact:
+     distro_packages_mirror_container_running: 'distro_packages_mirror_container_vars[0]["State"]["Status"] not in ["running"]'
+  when: 'distro_packages_mirror_container_found'
+- name: distro packages mirror container not running
+  command: docker rm -f '{{distro_packages_mirror_container}}'
+  when: 'distro_packages_mirror_container_found and not distro_packages_mirror_container_running'
+- name: distro packages mirror container need restart
+  set_fact:
+  when: 'distro_packages_mirror_container_running'
+- name: distro packages mirror container
+  command: docker run -d \
+    --name '{{distro_packages_mirror_container}}' \
+           '{{distro_packages_mirror_image}}'
+  when: 'not distro_packages_mirror_container_found'
+- name: distro packages mirror container new info
+  command: docker inspect '{{distro_packages_mirror_container}}'
+  register: distro_packages_mirror_container_info2
+  when: 'not distro_packages_mirror_container_found'
+- name: distro packages mirror container info
+  set_fact:
+    distro_packages_mirror_container_info: "{{ distro_packages_mirror_container_info2 }}"
+  when: 'not distro_packages_mirror_container_found'
+- name: distro packages mirror container vars
+  set_fact:
+    distro_packages_mirror_container_vars: '{{distro_packages_mirror_container_info.stdout | from_json }}'
+- name: distro packages mirror ip
+  set_fact:
+    distro_packages_mirror_ip: '{{ distro_packages_mirror_container_vars[0]["NetworkSettings"]["IPAddress"] }}'
+- debug: var=distro_packages_mirror_ip
+#
+- name: distro_packages_mirror_etc_hosts for opensuse
+  set_fact:
+    distro_packages_mirror_etc_hosts: '{{ dict([("download.opensuse.org", distro_packages_mirror_ip)]) }}'
+  when: 'distro_vendor == "opensuse"'
+- name: distro_packages_mirror_etc_hosts for centos
+  set_fact:
+    distro_packages_mirror_etc_hosts: '{{ dict([("mirrorlist.centos.org", distro_packages_mirror_ip)]) }}'
+  when: 'distro_vendor == "centos"'
+- name: distro_packages_mirror_etc_hosts for ubuntu
+  set_fact:
+    distro_packages_mirror_etc_hosts: '{{ dict([("archive.ubuntu.com", distro_packages_mirror_ip), ("security.ubuntu.com", distro_packages_mirror_ip)]) }}'
+  when: 'distro_vendor == "ubuntu"'
+#
+- name: distro_packages_mirror_add_hosts for opensuse
+  set_fact:
+    distro_packages_mirror_add_hosts: '--add-host download.opensuse.org:{{distro_packages_mirror_ip}}'
+  when: 'distro_vendor == "opensuse"'
+- name: distro_packages_mirror_add_hosts for centos
+  set_fact:
+    distro_packages_mirror_add_hosts: '--add-host mirrorlist.centos.org:{{distro_packages_mirror_ip}}'
+  when: 'distro_vendor == "centos"'
+- name: distro_packages_mirror_add_hosts for ubuntu
+  set_fact:
+    distro_packages_mirror_add_hosts: '--add-host archive.ubuntu.com:{{distro_packages_mirror_ip}} --add-host security.ubuntu.com:{{distro_packages_mirror_ip}}'
+  when: 'distro_vendor == "ubuntu"'
+#
+- debug: var=distro_packages_mirror_add_hosts
