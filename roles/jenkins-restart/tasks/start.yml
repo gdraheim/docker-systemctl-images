@@ -6,7 +6,7 @@
     port: "{{jenkins_port}}"
     timeout: 30
 - uri:
-    url: "http://localhost:{{jenkins_port}}{{jenkins_prefix}}"
+    url: "http://localhost:{{jenkins_port}}{{jenkins_prefix}}/login"
     return_content: yes
     status_code: [ 200, 403 ]
   register: statuspage
