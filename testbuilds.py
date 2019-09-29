@@ -1323,7 +1323,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(chmod_logfile_2)
         # THEN ready to run the deployment playbook
         prep = "ansible-sudo.yml"
-        playbooks = "docker-build-playbook.yml"
+        playbooks = "docker-build-systems.yml"
         inventory = "docker-build-compose.ini"
         variables = "-e LOCAL=yes -e jenkins_prefix=/buildserver"
         cmd = "ansible-playbook -i {inventory} {prep} -vv"
@@ -1400,7 +1400,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         inventory = "docker-start-compose.ini"
-        playbooks = "docker-start-playbook.yml"
+        playbooks = "docker-start-systems.yml"
         variables = "-e LOCAL=yes -e j_username=installs -e j_password=installs.11"
         vartarget = "-e j_url=http://serversystem:8080/buildserver"
         ansible = "ansible-playbook -i {inventory} {variables} {vartarget} {playbooks} -vv"
