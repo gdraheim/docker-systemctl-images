@@ -44,5 +44,8 @@ op opensuse: ; ./testbuilds.py make_opensuse
 ub ubuntu:   ; ./testbuilds.py make_ubuntu
 ce centos:   ; ./testbuilds.py make_centos
 
+back:
+	cp -r roles/docker_distro_packages_mirror ../docker-mirror-packages-repo/roles/
+	cp -r roles/docker_distro_version ../docker-mirror-packages-repo/roles/
 clean:
 	- rm -rf tmp/tmp.test_*
