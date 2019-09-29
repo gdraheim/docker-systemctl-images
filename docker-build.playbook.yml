@@ -1,0 +1,140 @@
+- hosts: localhost
+  vars:
+     base_image: "centos:7.5.1804"
+     base_command: "sleep 900"
+     docker_repository: "localhost:5000"
+     serversystem_docker_prefix: "systemctl/serversystem"
+     virtualdesktop_docker_prefix: "systemctl/virtualdesktop"
+  roles:
+    - role: docker_distro_version
+      image: "{{ base_image }}"
+    - role: docker_distro_packages_mirror
+  tasks:
+    - debug: var=distro_packages_mirror_name
+    - assert:
+        that: 
+          - 'distro_vendor == "centos"'
+          - 'distro_version == "7.5.1804"'
+          - 'distro_packages_mirror_name == "mirror-packages/centos-repo:7.5.1804"'
+          - '"--add-host" in distro_packages_mirror_add_hosts'
+      when: ' base_image == "centos:7.5.1804"'
+    - name: name of setup containers
+      set_fact:
+         serversystem_container: "{{ serversystem_docker_prefix.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+         virtualdesktop_container: "{{ virtualdesktop_docker_prefix.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+    - debug: var=serversystem_container
+    - debug: var=virtualdesktop_container
+    - debug: var=distro_packages_mirror_add_hosts
+    - name: remove setup containers
+      command: docker rm -f '{{ serversystem_container }}' '{{ virtualdesktop_container }}'
+      ignore_errors: yes
+    - name: start serversystem container
+      command: docker run -d --rm=true {{ distro_packages_mirror_add_hosts }} \
+                     --name "{{ serversystem_container }}" "{{ base_image }}" {{base_command}}
+    - name: start virtualdesktop container
+      command: docker run -d --rm=true {{ distro_packages_mirror_add_hosts }} \
+                     --name "{{ virtualdesktop_container }}" "{{ base_image }}" {{base_command}}
+    - name: fixup serversystem container
+      command: docker exec "{{ serversystem_container }}" zypper install -y python python-xml
+      when: 'distro_os_family == "Suse"'
+    - name: fixup virtualdesktop container
+      command: docker exec "{{ virtualdesktop_container }}" zypper install -y python python-xml
+      when: 'distro_os_family == "Suse"'
+    - name: attach serversystem container
+      add_host:
+        hostname: '{{ serversystem_container }}'
+        groups: [ "serversystem" ]
+        ansible_connection: 'docker'
+        ansible_user: "root"
+        # ansible_python_interpreter: /usr/bin/python
+    - name: attach virtualdesktop container
+      add_host:
+        hostname: '{{ virtualdesktop_container }}'
+        groups: [ "virtualdesktop" ]
+        ansible_connection: 'docker'
+        ansible_user: "root"
+        # ansible_python_interpreter: /usr/bin/python
+    - name: gather facts on serversystem
+      delegate_to: '{{ serversystem_container }}'
+      setup:
+        gather_subset: "all"
+    - name: gather facts on virtualdesktop
+      delegate_to: '{{ serversystem_container }}'
+      setup:
+        gather_subset: "all"
+###############################################################################
+- name: setup the containers
+  vars:
+    jenkins_prefix: /build
+  import_playbook: "docker-build-systems.yml"
+###############################################################################
+- hosts: localhost
+  vars:
+     docker_repository: "localhost:5000"
+     serversystem_docker_prefix: "systemctl/serversystem"
+     virtualdesktop_docker_prefix: "systemctl/virtualdesktop"
+     serversystem_software_package: "jenkins"
+     virtualdesktop_software_package: "firefox"
+  tasks:
+    - name: virtualdesktop software version
+      delegate_to: '{{ serversystem_container }}'
+      shell: "rpm -q --info {{ serversystem_software_package }} | sed -e '/Version *:/!d' -e 's/.*: *//' -e q"
+      register: serversystem_software_version_found
+    - debug: var=serversystem_software_version_found
+    - name: serversystem image version
+      set_fact:
+         image_version: "{{ serversystem_software_version_found.stdout | trim }}"
+    - debug: var=image_version
+    - name: serversystem image name
+      set_fact:
+         image_name3: '{{ docker_repository + "/" + serversystem_docker_prefix + "/" + distro_vendor + "/" + distro_version }}'
+         image_name2: '{{ docker_repository + "/" + serversystem_docker_prefix + "/" + distro_vendor }}'
+         image_name1: '{{ docker_repository + "/" + serversystem_docker_prefix }}'
+    - name: commit image
+      command: docker commit \
+        -c 'CMD ["/usr/bin/systemctl"]' \
+        '{{ serversystem_container }}' '{{ image_name3 }}:{{ image_version }}'
+    - name: latest image 3
+      command: docker tag \
+         '{{ image_name3 }}:{{ image_version }}' '{{ image_name3 }}'
+    - name: newest image 2
+      command: docker tag \
+         '{{ image_name3 }}:{{ image_version }}' '{{ image_name2 }}:{{ image_version}}'
+    - name: latest image 2
+      command: docker tag \
+         '{{ image_name2 }}:{{ image_version }}' '{{ image_name2 }}'
+###############################################################################
+    - name: virtualdesktop software version
+      delegate_to: '{{ virtualdesktop_container }}'
+      shell: "rpm -q --info {{ virtualdesktop_software_package }} | sed -e '/Version *:/!d' -e 's/.*: *//' -e q"
+      register: virtualdesktop_software_version_found
+    - debug: var=virtualdesktop_software_version_found
+    - name: virtualdesktop image version
+      set_fact:
+         image_version: "{{ virtualdesktop_software_version_found.stdout | trim }}"
+    - debug: var=image_version
+    - name: virtualdesktop image name
+      set_fact:
+         image_name3: '{{ docker_repository + "/" + virtualdesktop_docker_prefix + "/" + distro_vendor + "/" + distro_version }}'
+         image_name2: '{{ docker_repository + "/" + virtualdesktop_docker_prefix + "/" + distro_vendor }}'
+         image_name1: '{{ docker_repository + "/" + virtualdesktop_docker_prefix }}'
+    - name: commit image
+      command: docker commit \
+        -c 'CMD ["/usr/bin/systemctl"]' \
+        '{{ virtualdesktop_container }}' '{{ image_name3 }}:{{ image_version }}'
+    - name: latest image 3
+      command: docker tag \
+         '{{ image_name3 }}:{{ image_version }}' '{{ image_name3 }}'
+    - name: newest image 2
+      command: docker tag \
+         '{{ image_name3 }}:{{ image_version }}' '{{ image_name2 }}:{{ image_version}}'
+    - name: latest image 2
+      command: docker tag \
+         '{{ image_name2 }}:{{ image_version }}' '{{ image_name2 }}'
+###############################################################################
+    - name: remove setup containers
+      command: docker rm -f '{{ serversystem_container }}' '{{ virtualdesktop_container }}'
+      ignore_errors: yes
+    - name: cleanup images
+      shell: 'docker images --filter=dangling=true --format "{{ "{{" }} .ID {{ "}}" }}" | xargs --no-run-if-empty docker rmi'
+      ignore_errors: yes
