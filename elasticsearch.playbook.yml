@@ -1,7 +1,7 @@
 - hosts: localhost
   vars:
      base_image: "centos:7.5.1804"
-     base_command: "sleep infinity"
+     base_command: "sleep 900"
      docker_repository: "localhost:5000"
      docker_prefix: "systemctl/elasticsearch"
   roles:
@@ -25,7 +25,7 @@
       command: docker rm -f '{{ setup_container }}'
       ignore_errors: yes
     - name: start setup container
-      command: docker run -d {{ distro_packages_mirror_add_hosts }} \
+      command: docker run -d --rm=true {{ distro_packages_mirror_add_hosts }} \
                      --name "{{ setup_container }}" "{{ base_image }}" {{base_command}}
     - name: fixup setup container
       command: docker exec "{{ setup_container }}" zypper install -y python python-xml
@@ -40,10 +40,12 @@
       delegate_to: '{{ setup_container }}'
       setup:
         gather_subset: "all"
+###############################################################################
     - name: setup the container
       delegate_to: '{{ setup_container }}'
       import_role: 
          name: "elasticsearch"
+###############################################################################
     - name: software package
       set_fact:
         software_package: '{{ elasticsearch_rpm.split("-")[0] }}'
