@@ -1,0 +1,93 @@
+- debug: var=distro_vendor
+- debug: var=distro_version
+- name: distro packages extras search
+  args:
+    executable: "/bin/bash"
+  shell: |
+    distro_vendor='{{ distro_vendor }}'
+    distro_version='{{ distro_version }}'
+    distro_rel='{{ distro_version.split(".")[0] }}'
+    distro_ref='{{ distro_version.split(".")[-1] }}'
+    repo='{{ distro_packages_mirror_repository }}'
+    case "$distro_vendor" in centos)
+        pattern="$repo/mirror-packages/epel-repo:$distro_rel.x."
+        echo "checking $distro_vendor = $pattern" >&2
+        while read image ; do
+                 image_tag=`echo "$image" | sed -e "s|.*:||"`
+                 image_rel=`echo "$image_tag" | sed -e "s|[.].*||"`
+                 image_ref=`echo "$image_tag" | sed -e "s|.*[.]||"`
+                 case "$image_ref" in [0123456789][0123456789][0123456789][0123456789])
+                     [ "$image_ref" -lt "$distro_ref" ] && continue
+                     distro_image="$image"
+                     distro_container="epel-repo-$distro_rel.x.$image_ref"
+                     break
+                 ;; esac
+             [ -n "$distro_image" ]  && break
+         done< <(docker images --format {{ "{{.Repository}}:{{.Tag}}" }} | sort | grep "^$pattern")
+         # use bash-ism to avoid "command | while read" which can not set vars outside
+     ;; *)
+        echo "checking warning: unknown distro vendor = $distro_vendor" >&2
+     ;; esac
+     need_stop="no"
+     need_start="no"
+     if [ -n "$distro_container" ]; then
+         container_status=`docker inspect -f "{{ "{{.State}}{{.Status}}" }}" "$distro_container" 2>/dev/null`
+         container_id=`docker inspect -f "{{ "{{.Image}}" }}" "$distro_container" 2>/dev/null`
+         image_id=`docker inspect -f "{{ "{{.ID}}" }}" "$distro_image" 2>/dev/null`
+         if [ -n "$container_status" ] && [ "$container_status" != "running" ]; then
+             need_stop="yes"
+             need_start="yes"
+         elif [ -n "$container_id" ] && [ "$container_id" != "$image_id" ]; then
+             need_stop="yes"
+             need_start="yes"
+         elif [ -z "$container_id" ] && [ -n "image_id" ]; then
+             need_start="yes"
+         fi
+         echo "image_id: '$image_id'" 
+         echo "container_id: '$container_id'"
+     fi
+     echo "image: '$distro_image'" 
+     echo "container: '$distro_container'"
+     echo "need_start: $need_start"
+     echo "need_stop: $need_stop"
+  register: distro_packages_extras_found
+  changed_when: no
+- name: distro packages extras found
+  set_fact:
+    distro_packages_extras: "{{ distro_packages_extras_found.stdout | from_yaml }}"
+- name: distro packages extras container stop
+  command: docker rm -f '{{distro_packages_extras.container}}'
+  when: 'distro_packages_extras.need_stop'
+- name: distro packages extras container start
+  command: docker run -d --rm=true \
+    --name '{{distro_packages_extras.container}}' \
+           '{{distro_packages_extras.image}}'
+  when: 'distro_packages_extras.need_start'
+- name: distro packages extras container address
+  command: docker inspect -f '{{ "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" }}' '{{distro_packages_extras.container}}'
+  register: distro_packages_extras_container_address
+  changed_when: no
+- name: distro packages extras container ip
+  set_fact:
+    distro_packages_extras_ip: '{{ distro_packages_extras_container_address.stdout }}'
+- debug: var=distro_packages_extras_ip
+#
+- name: distro_packages_extras_etc_hosts for centos
+  set_fact:
+    distro_packages_extras_etc_hosts: '{{ dict([("mirrors.fedoraproject.org", distro_packages_extras_ip)]) }}'
+  when: 'distro_vendor == "centos"'
+- name: distro_packages_extras_etc_hosts for ubuntu
+  set_fact:
+    distro_packages_extras_etc_hosts: '{{ dict([("universe.ubuntu.com", distro_packages_extras_ip)]) }}'
+  when: 'distro_vendor == "ubuntu"'
+#
+- name: distro_packages_extras_add_hosts for centos
+  set_fact:
+    distro_packages_extras_add_hosts: '--add-host mirrors.fedoraproject.org:{{distro_packages_extras_ip}}'
+  when: 'distro_vendor == "centos"'
+- name: distro_packages_extras_add_hosts for ubuntu
+  set_fact:
+    distro_packages_extras_add_hosts: '--add-host universe.ubuntu.com:{{distro_packages_extras_ip}}'
+  when: 'distro_vendor == "ubuntu"'
+#
+- debug: var=distro_packages_extras_add_hosts
