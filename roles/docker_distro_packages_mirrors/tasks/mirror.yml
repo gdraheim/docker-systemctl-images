@@ -7,7 +7,7 @@
      need_stop="no"
      need_start="no"
      if [ -n "$distro_container" ]; then
-         container_status=`docker inspect -f "{{ "{{.State}}{{.Status}}" }}" "$distro_container" 2>/dev/null`
+         container_status=`docker inspect -f "{{ "{{.State.Status}}" }}" "$distro_container" 2>/dev/null`
          container_id=`docker inspect -f "{{ "{{.Image}}" }}" "$distro_container" 2>/dev/null`
          image_id=`docker inspect -f "{{ "{{.ID}}" }}" "$distro_image" 2>/dev/null`
          if [ -n "$container_status" ] && [ "$container_status" != "running" ]; then
