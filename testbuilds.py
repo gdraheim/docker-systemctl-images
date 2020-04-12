@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.3.3.3325"
+__version__ = "1.4.3.3.3424"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -32,7 +32,7 @@ _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/image"
-CENTOS = "centos:7.5.1804"
+CENTOS = "centos:7.7.1908"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse/leap:15.0"
 
@@ -221,7 +221,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             # rhel:7.4 # VERSION="7.4 (Maipo)" ID="rhel" VERSION_ID="7.4"
             # centos:7.3  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
             # centos:7.4  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # centos:7.5.1804  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
+            # centos:7.7.1908  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
             # opensuse:42.3 # VERSION="42.3" ID=opensuse VERSION_ID="42.3"
             # opensuse/leap:15.0 # VERSION="15.0" ID="opensuse-leap" VERSION_ID="15.0"
             # ubuntu:16.04 # VERSION="16.04.3 LTS (Xenial Xerus)" ID=ubuntu VERSION_ID="16.04"

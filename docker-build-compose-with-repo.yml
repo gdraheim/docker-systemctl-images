@@ -2,7 +2,7 @@ version: "2"
 
 services:
   virtualdesktop:
-    image: "centos:7.4.1708"
+    image: "centos:7.7.1908"
     command: "sleep 9999"
     expose: [ 5599, 4444 ]
     ports:
@@ -13,7 +13,7 @@ services:
       network93:
         ipv4_address: "10.193.35.4"
   serversystem:
-    image: "centos:7.4.1708"
+    image: "centos:7.7.1908"
     command: "sleep 9999"
     expose: [ 8080 ]
     ports:
@@ -24,8 +24,7 @@ services:
       network93:
         ipv4_address: "10.193.35.3"
   centos_repo:
-    image: "localhost:5000/mirror-packages/centos-repo:7.5.1804"
-    # image: "localhost:5000/mirror-packages/centos-repo:7.4.1708"
+    image: "localhost:5000/mirror-packages/centos-repo:7.7.1908"
     expose: [ 80 ]
     networks:
       network93:

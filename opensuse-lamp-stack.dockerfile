@@ -1,7 +1,7 @@
 FROM opensuse:42.3
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.4.3325"
+      __version__="1.4.3424"
 
 ENV WEB_CONF="/etc/apache2/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/etc/phpMyAdmin/config.inc.php"
