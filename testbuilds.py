@@ -1,10 +1,10 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """ Testcases for docker-systemctl-replacement functionality """
 
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.4.4147"
+__version__ = "1.5.4147"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -23,6 +23,11 @@ import re
 from fnmatch import fnmatchcase as fnmatch
 from glob import glob
 import json
+import sys
+
+if sys.version[0] == '3':
+    basestring = str
+    xrange = range
 
 logg = logging.getLogger("TESTING")
 _python = "/usr/bin/python"
@@ -40,6 +45,17 @@ DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 RUNTIME = "/tmp/run-"
 
+def decodes(text):
+    if text is None: return None
+    if isinstance(text, bytes):
+        encoded = sys.getdefaultencoding()
+        if encoded in ["ascii"]:
+            encoded = "utf-8"
+        try: 
+            return text.decode(encoded)
+        except:
+            return text.decode("latin-1")
+    return text
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
@@ -67,7 +83,7 @@ def output2(cmd, shell=True):
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
-    return out, run.returncode
+    return decodes(out), run.returncode
 def output3(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
@@ -75,7 +91,17 @@ def output3(cmd, shell=True):
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = run.communicate()
-    return out, err, run.returncode
+    return decodes(out), decodes(err), run.returncode
+def background(cmd, shell=True):
+    BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
+    log = open(os.devnull, "wb")
+    run = subprocess.Popen(cmd, shell=shell, stdout=log, stderr=log)
+    pid = run.pid
+    logg.info("PID %s = %s", pid, cmd)
+    return BackgroundProcess(pid, run, log)
+
+
+
 def _lines(lines):
     if isinstance(lines, basestring):
         lines = lines.split("\n")
@@ -116,7 +142,7 @@ def text_file(filename, content):
     f.close()
 def shell_file(filename, content):
     text_file(filename, content)
-    os.chmod(filename, 0770)
+    os.chmod(filename, 0o770)
 def copy_file(filename, target):
     targetdir = os.path.dirname(target)
     if not os.path.isdir(targetdir):
@@ -124,7 +150,7 @@ def copy_file(filename, target):
     shutil.copyfile(filename, target)
 def copy_tool(filename, target):
     copy_file(filename, target)
-    os.chmod(target, 0750)
+    os.chmod(target, 0o750)
 
 def get_caller_name():
     frame = inspect.currentframe().f_back.f_back
