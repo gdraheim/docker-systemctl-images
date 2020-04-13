@@ -1,7 +1,7 @@
 FROM centos:7.7.1908
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.4.4147"
+      __version__="1.5.4147"
 EXPOSE 8080
 
 RUN yum search tomcat
