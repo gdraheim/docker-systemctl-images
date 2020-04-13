@@ -757,8 +757,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_712_centos7_postgres_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+    def test_711_centos7_postgres_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -770,7 +770,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -788,10 +787,65 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
+        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
+        sh____(cmd.format(**locals()))
         # THEN
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
-        cmd = "sleep 5; {login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_712_centos7_postgres_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can see a specific role with an SQL query
+            because the test script has created a new user account 
+            in the in the database with a known password. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos8-postgres"
+        dockerfile="centos8-postgres.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
+        sh____(cmd.format(**locals()))
+        # THEN
+        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        query = "SELECT rolname FROM pg_roles"
+        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -810,14 +864,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_715_centos7_postgres_user_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2,
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
              AND in this variant it runs under User=postgres right
                there from PID-1 started implicity in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -836,16 +889,80 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
+        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
+        sh____(cmd.format(**locals()))
         # THEN
         login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
         query = "SELECT rolname FROM pg_roles"
-        cmd = "sleep 5; {login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} ls {runtime}postgres/run"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}postgres/run/postgresql.service.status && break; sleep 2; done'"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:{runtime}postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "postgres.*python.*systemctl"))
+        self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_716_centos8_postgres_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3,
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled.
+             AND in this variant it runs under User=postgres right
+               there from PID-1 started implicity in --user mode."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos8-postgres"
+        dockerfile="centos8-postgres-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        runtime = RUNTIME
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
+        sh____(cmd.format(**locals()))
+        # THEN
+        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        query = "SELECT rolname FROM pg_roles"
+        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ls {runtime}postgres/run"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}postgres/run/postgresql.service.status && break; sleep 2; done'"
         sh____(cmd.format(**locals()))
         cmd = "docker cp {testname}:{runtime}postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
