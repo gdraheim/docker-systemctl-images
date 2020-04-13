@@ -1,7 +1,7 @@
 FROM "ubuntu:16.04"
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.4.3424"
+      __version__="1.4.4147"
 EXPOSE 80
 
 RUN apt-get update
