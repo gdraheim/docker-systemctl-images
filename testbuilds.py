@@ -463,7 +463,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
-    def test_701_centos_httpd_dockerfile(self):
+    def test_701_centos7_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -478,8 +478,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        name="centos-httpd"
-        dockerfile="centos-httpd.dockerfile"
+        name="centos7-httpd"
+        dockerfile="centos7-httpd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -511,7 +511,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_705_centos_httpd_not_user_dockerfile(self):
+    def test_705_centos7_httpd_not_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -522,8 +522,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        name="centos-httpd"
-        dockerfile="centos-httpd-not-user.dockerfile"
+        name="centos7-httpd"
+        dockerfile="centos7-httpd-not-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -554,7 +554,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_706_centos_httpd_user_dockerfile(self):
+    def test_706_centos7_httpd_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -565,8 +565,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        name="centos-httpd"
-        dockerfile="centos-httpd-user.dockerfile"
+        name="centos7-httpd"
+        dockerfile="centos7-httpd-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -612,7 +612,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_712_centos_postgres_dockerfile(self):
+    def test_712_centos7_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -628,8 +628,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        name="centos-postgres"
-        dockerfile="centos-postgres.dockerfile"
+        name="centos7-postgres"
+        dockerfile="centos7-postgres.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -664,7 +664,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_715_centos_postgres_user_dockerfile(self):
+    def test_715_centos7_postgres_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -675,8 +675,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        name="centos-postgres"
-        dockerfile="centos-postgres-user.dockerfile"
+        name="centos7-postgres"
+        dockerfile="centos7-postgres-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -792,7 +792,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_721_ubuntu_apache2(self):
+    def test_721_ubuntu16_apache2(self):
         """ WHEN using a dockerfile for systemd enabled Ubuntu
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -806,7 +806,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu-apache2.dockerfile"
+        dockerfile="ubuntu16-apache2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -838,15 +838,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_730_centos_lamp_stack(self):
+    def test_730_centos7_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="centos-lamp-stack"
-        dockerfile="centos-lamp-stack.dockerfile"
+        name="centos7-lamp-stack"
+        dockerfile="centos7-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -881,14 +881,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_740_opensuse_lamp_stack(self):
+    def test_740_opensuse14_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="opensuse-lamp-stack"
-        dockerfile="opensuse-lamp-stack.dockerfile"
+        name="opensuse14-lamp-stack"
+        dockerfile="opensuse14-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -923,14 +923,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_741_opensuse_lamp_stack_php7(self):
+    def test_741_opensuse15_lamp_stack_php7(self):
         """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse later than 15.x"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="opensuse-lamp-stack-php7"
-        dockerfile="opensuse-lamp-stack-php7.dockerfile"
+        name="opensuse15-lamp-stack"
+        dockerfile="opensuse15-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -965,7 +965,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_750_centos_elasticsearch(self):
+    def test_750_centos7_elasticsearch(self):
         """ Check setup of ElasticSearch on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
@@ -979,8 +979,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         root = self.root(testdir)
         port=self.testport()
-        name="centos-elasticsearch"
-        dockerfile="centos-elasticsearch.dockerfile"
+        name="centos7-elasticsearch"
+        dockerfile="centos7-elasticsearch.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1029,7 +1029,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_762_centos_tomcat_dockerfile(self):
+    def test_762_centos7_tomcat_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
@@ -1039,7 +1039,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        dockerfile="centos-tomcat.dockerfile"
+        dockerfile="centos7-tomcat.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1072,7 +1072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_765_centos_tomcat_user_dockerfile(self):
+    def test_765_centos7_tomcat_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
@@ -1082,7 +1082,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        dockerfile="centos-tomcat-user.dockerfile"
+        dockerfile="centos7-tomcat-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1120,7 +1120,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_772_centos_cntlm_dockerfile(self):
+    def test_772_centos7_cntlm_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
@@ -1130,7 +1130,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        dockerfile="centos-cntlm.dockerfile"
+        dockerfile="centos7-cntlm.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1166,7 +1166,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_775_centos_cntlm_user_dockerfile(self):
+    def test_775_centos7_cntlm_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
@@ -1176,7 +1176,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        dockerfile="centos-cntlm-user.dockerfile"
+        dockerfile="centos7-cntlm-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1212,7 +1212,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_778_centos_ssh_dockerfile(self):
+    def test_778_centos7_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -1222,7 +1222,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        dockerfile="centos-sshd.dockerfile"
+        dockerfile="centos7-sshd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1267,7 +1267,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
-        setupfile="centos-elasticsearch-setup.yml"
+        setupfile="centos7-elasticsearch-setup.yml"
         savename = docname(setupfile)
         basename = CENTOS
         saveto = SAVETO
@@ -1279,11 +1279,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run -d --name {testname} {image} sleep infinity"
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
-        cmd = "ansible-playbook -i centos-elasticsearch-setup.ini ansible-sudo.yml -vv" + prepare
+        cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini ansible-sudo.yml -vv" + prepare
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} grep __version__ /usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "ansible-playbook -i centos-elasticsearch-setup.ini centos-elasticsearch-setup.yml -vv"
+        cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini centos7-elasticsearch-setup.yml -vv"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} grep __version__ /usr/bin/systemctl"
         sh____(cmd.format(**locals()))
@@ -1491,7 +1491,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_908_commit_containers_as_images(self):
         saveto = SAVETO
         images = IMAGES
-        saveimage = "centos-jenkins"
+        saveimage = "centos7-jenkins"
         new_image1 = "localhost:5000/systemctl/serversystem"
         new_image2 = "localhost:5000/systemctl/virtualdesktop"
         container1 = "systemctl2_serversystem_1"

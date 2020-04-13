@@ -31,6 +31,7 @@ UA ubuntu-apache2.dockerfile: ; ./testbuilds.py test_721
 DJ docker-jenkins: ; ./testbuilds.py test_90*
 
 check: ;  ./testbuilds.py -vv 
+check3: ; ./testbuilds.py -vv "test_[178]"
 test_%: ; ./testbuilds.py $@ -vv
 real_%: ; ./testbuilds.py $@ -vv
 
