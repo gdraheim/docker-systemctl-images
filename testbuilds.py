@@ -897,6 +897,48 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_741_opensuse_lamp_stack_php7(self):
+        """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse later than 15.x"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        name="opensuse-lamp-stack-php7"
+        dockerfile="opensuse-lamp-stack-php7.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        # THEN
+        time.sleep(5)
+        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_750_centos_elasticsearch(self):
         """ Check setup of ElasticSearch on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
