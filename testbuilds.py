@@ -464,7 +464,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
     def test_701_centos7_httpd_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
             Without a special startup.sh script or container-cmd 
@@ -475,7 +475,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -511,15 +510,61 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_702_centos8_httpd_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos8-httpd"
+        dockerfile="centos8-httpd.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_705_centos7_httpd_not_user_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
              AND in this variant it runs under User=httpd right
                there from PID-1 started implicity in --user mode
             THEN it fails."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -554,8 +599,50 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_706_centos7_httpd_user_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
+    def test_706_centos8_httpd_not_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+             AND in this variant it runs under User=httpd right
+               there from PID-1 started implicity in --user mode
+            THEN it fails."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos7-httpd"
+        dockerfile="centos8-httpd-not-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        cmd = "docker exec {testname} systemctl start httpd --user"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "Unit httpd.service not for --user mode"))
+        cmd = "docker exec {testname} /usr/sbin/httpd -DFOREGROUND"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 1)
+        self.assertTrue(greps(err, "could not bind to address 0.0.0.0:80"))
+        self.assertTrue(greps(err, "Unable to open logs"))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_707_centos7_httpd_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
              AND in this variant it runs under User=httpd right
@@ -567,6 +654,64 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         name="centos7-httpd"
         dockerfile="centos7-httpd-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start httpd --user"
+        out, err, end = output3(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
+        self.assertEqual(end, 0)
+        cmd = "docker rm -f {testname}"
+        sh____(cmd.format(**locals()))
+        #
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertTrue(greps(out, "apache.*python.*systemctl"))
+        self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_708_centos8_httpd_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+             AND in this variant it runs under User=httpd right
+               there from PID-1 started implicity in --user mode.
+            THEN it succeeds if modified"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos8-httpd"
+        dockerfile="centos8-httpd-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
