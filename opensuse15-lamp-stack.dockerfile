@@ -11,12 +11,11 @@ ARG PASSWORD=Testuser.OK
 ARG LISTEN=172.0.0.0/8
 EXPOSE 80
 
-COPY files/docker/systemctl.py /usr/bin/systemctl
-RUN zypper install -r repo-oss -y python
+COPY files/docker/systemctl3.py /usr/bin/systemctl
+RUN zypper install -r repo-oss -y python3
 RUN zypper install -r repo-oss -y apache2 apache2-utils mariadb-server mariadb-tools 
-COPY files/docker/systemctl.py /usr/bin/systemctl
+COPY files/docker/systemctl3.py /usr/bin/systemctl
 RUN zypper install -r repo-oss -y php7 php7-mysql apache2-mod_php7 phpMyAdmin
-COPY files/docker/systemctl.py /usr/bin/systemctl
 # RUN a2enmod php7
 
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
