@@ -30,7 +30,9 @@ if sys.version[0] == '3':
     xrange = range
 
 logg = logging.getLogger("TESTING")
-_python = "/usr/bin/python"
+_python2 = "/usr/bin/python"
+_python3 = "/usr/bin/python3"
+_python = ""
 _systemctl_py = "files/docker/systemctl.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
@@ -522,6 +524,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
         testdir = self.testdir()
         name="centos8-httpd"
@@ -607,6 +611,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode
             THEN it fails."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -649,7 +655,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode.
             THEN it succeeds if modified"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -707,7 +714,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode.
             THEN it succeeds if modified"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
         testdir = self.testdir()
         name="centos8-httpd"
@@ -810,7 +818,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_712_centos7_postgres_dockerfile(self):
+    def test_712_centos8_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -823,6 +831,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
         testdir = self.testdir()
         name="centos8-postgres"
@@ -931,6 +941,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
         testdir = self.testdir()
         name="centos8-postgres"
@@ -1149,7 +1161,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_731_centos7_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -1276,7 +1289,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_750_centos7_elasticsearch(self):
         """ Check setup of ElasticSearch on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
         filename = "elasticsearch-1.7.3.noarch.rpm"
         into_dir = "Software/ElasticSearch"
@@ -1344,7 +1358,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos7-tomcat.dockerfile"
@@ -1387,7 +1402,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             In this case the container is run in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos7-tomcat-user.dockerfile"
@@ -1435,7 +1451,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos7-cntlm.dockerfile"
@@ -1481,7 +1498,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             In this case the container is run in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos7-cntlm-user.dockerfile"
@@ -1527,10 +1545,60 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         dockerfile="centos7-sshd.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2; docker exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `date -I` {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+        logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
+        logg.warning("the scp call will succeed only once - the sshd is dead after that")
+    def test_779_centos8_ssh_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
+            THEN we can create an image with an ssh service 
+                 being installed and enabled.
+            Addtionally we do check an example application"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="centos8-sshd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1572,7 +1640,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_850_centos_elasticsearch_setup(self):
         """ Check setup of ElasticSearch on CentOs"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
         setupfile="centos7-elasticsearch-setup.yml"
@@ -1639,7 +1708,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     def test_900_ansible_test(self):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         sh____("ansible-playbook --version | grep ansible-playbook.2") # atleast version2
         new_image1 = "localhost:5000/systemctl:serversystem"
         new_image2 = "localhost:5000/systemctl:virtualdesktop"
@@ -1660,7 +1730,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_901_ansible_download_software(self):
         """ download the software parts (will be done just once) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         sh____("ansible-playbook download-jenkins.yml -vv")
         sh____("ansible-playbook download-selenium.yml -vv")
         sh____("ansible-playbook download-firefox.yml -vv")
@@ -1672,7 +1743,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_902_ansible_restart_docker_build_compose(self):
         """ bring up the build-step deployment containers """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         compose_and_repo = "docker-build-compose"
         if self.local_image(CENTOS):
            compose_and_repo += "-with-repo"
@@ -1686,7 +1758,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_903_ansible_run_build_step_playbooks(self):
         """ run the build-playbook (using ansible roles) """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testdir = self.testdir()
         # WHEN environment is prepared
         make_logfile_1 = "docker exec systemctl1_serversystem_1 bash -c 'touch /var/log/systemctl.log'"
@@ -1731,7 +1804,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_904_ansible_save_build_step_as_new_images(self):
         # stop the containers but keep them around
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         inventory = "docker-build-compose.ini"
         playbooks = "docker-build-stop.yml"
         variables = "-e LOCAL=yes"
@@ -1755,7 +1829,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_905_ansible_restart_docker_start_compose(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         compose_and_repo = "docker-build-compose"
         if self.local_image(CENTOS):
            compose_and_repo += "-with-repo"
@@ -1774,7 +1849,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_906_ansible_unlock_jenkins(self):
         """ unlock jenkins as a post-build config-example using selenium-server """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         inventory = "docker-start-compose.ini"
         playbooks = "docker-start-systems.yml"
         variables = "-e LOCAL=yes -e j_username=installs -e j_password=installs.11"
@@ -1787,7 +1863,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_907_ansible_check_jenkins_login(self):
         """ check jenkins runs unlocked as a testcase result """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testdir = self.testdir()
         webtarget = "http://localhost:8080/buildserver/manage"
         weblogin = "--user installs --password installs.11 --auth-no-challenge"
@@ -1812,7 +1889,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_909_ansible_stop_all_containers(self):
         """ bring up the start-step runtime containers from the new images"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        if _python.endswith("python3"): self.skipTest("no python3 on centos")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         time.sleep(3)
         drop_old_build_step = "docker-compose -p systemctl1 -f docker-build-compose.yml down"
         drop_old_start_step = "docker-compose -p systemctl2 -f docker-start-compose.yml down"
@@ -1832,8 +1910,12 @@ if __name__ == "__main__":
        help="increase logging level [%default]")
     _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
        help="systemctl.py file to be tested (%default)")
-    _o.add_option("-p","--python", metavar="EXE", default=_python,
+    _o.add_option("--python3", metavar="EXE", default=_python3,
+       help="use another python2 execution engine [%default]")
+    _o.add_option("--python2", metavar="EXE", default=_python2,
        help="use another python execution engine [%default]")
+    _o.add_option("-p","--python", metavar="EXE", default=_python,
+       help="override the python execution engine [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
@@ -1843,6 +1925,8 @@ if __name__ == "__main__":
     #
     _systemctl_py = opt.systemctl_py
     _python = opt.python
+    _python2 = opt.python2
+    _python3 = opt.python3
     #
     logfile = None
     if opt.logfile:
