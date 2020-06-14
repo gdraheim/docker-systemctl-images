@@ -17,10 +17,6 @@ RUN cp /usr/bin/systemctl3.py /usr/bin/systemctl
 
 # > systemctl cat sshd
 # Wants=sshd-keygen.target
-# > systemctl cat sshd-keygen.target
-# Wants=sshd-keygen@rsa.service
-# Wants=sshd-keygen@ecdsa.service
-# Wants=sshd-keygen@ed25519.service
 
 RUN systemctl enable sshd-keygen.target --force
 RUN systemctl enable sshd
