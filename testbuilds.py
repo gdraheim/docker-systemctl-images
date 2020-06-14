@@ -1615,6 +1615,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2; docker exec {testname} ps axu"
         sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        cmd = "sleep 2; docker exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
