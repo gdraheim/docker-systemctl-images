@@ -43,9 +43,13 @@ CENTOS = "centos:7.7.1908"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse/leap:15.0"
 
+DOCKER = "docker"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 RUNTIME = "/tmp/run-"
+
+_maindir = os.path.dirname(sys.argv[0])
+_mirror = os.path.join(_maindir, "docker_mirror.py")
 
 def decodes(text):
     if text is None: return None
@@ -243,120 +247,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not values or "NetworkSettings" not in values[0]:
             logg.critical(" docker inspect %s => %s ", name, values)
         return values[0]["NetworkSettings"]["IPAddress"]    
-    def local_system(self):
-        distro, version = "", ""
-        if os.path.exists("/etc/os-release"):
-            # rhel:7.4 # VERSION="7.4 (Maipo)" ID="rhel" VERSION_ID="7.4"
-            # centos:7.3  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # centos:7.4  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # centos:7.7.1908  # VERSION="7 (Core)" ID="centos" VERSION_ID="7"
-            # opensuse:42.3 # VERSION="42.3" ID=opensuse VERSION_ID="42.3"
-            # opensuse/leap:15.0 # VERSION="15.0" ID="opensuse-leap" VERSION_ID="15.0"
-            # ubuntu:16.04 # VERSION="16.04.3 LTS (Xenial Xerus)" ID=ubuntu VERSION_ID="16.04"
-            # ubuntu:18.04 # VERSION="18.04.1 LTS (Bionic Beaver)" ID=ubuntu VERSION_ID="18.04"
-            for line in open("/etc/os-release"):
-                key, value = "", ""
-                m = re.match('^([_\\w]+)=([^"].*).*', line.strip())
-                if m:
-                    key, value = m.group(1), m.group(2)
-                m = re.match('^([_\\w]+)="([^"]*)".*', line.strip())
-                if m:
-                    key, value = m.group(1), m.group(2)
-                # logg.debug("%s => '%s' '%s'", line.strip(), key, value)
-                if key in ["ID"]:
-                    distro = value.replace("-","/")
-                if key in ["VERSION_ID"]:
-                    version = value
-        if os.path.exists("/etc/redhat-release"):
-            for line in open("/etc/redhat-release"):
-                m = re.search("release (\\d+[.]\\d+).*", line)
-                if m:
-                    distro = "rhel"
-                    version = m.group(1)
-        if os.path.exists("/etc/centos-release"):
-            # CentOS Linux release 7.5.1804 (Core)
-            for line in open("/etc/centos-release"):
-                m = re.search("release (\\d+[.]\\d+).*", line)
-                if m:
-                    distro = "centos"
-                    version = m.group(1)
-        logg.info(":: local_system %s:%s", distro, version)
-        if distro and version:
-            return "%s:%s" % (distro, version)
-        return ""
-    def with_local_ubuntu_mirror(self, ver = None):
-        """ detects a local ubuntu mirror or starts a local
-            docker container with a ubunut repo mirror. It
-            will return the extra_hosts setting to start
-            other docker containers"""
-        rmi = "localhost:5000/mirror-packages"
-        rep = "ubuntu-repo"
-        ver = ver or UBUNTU.split(":")[1]
-        return self.with_local(rmi, rep, ver, "archive.ubuntu.com", "security.ubuntu.com")
-    def with_local_centos_mirror(self, ver = None):
-        """ detects a local centos mirror or starts a local
-            docker container with a centos repo mirror. It
-            will return the setting for extrahosts"""
-        rmi = "localhost:5000/mirror-packages"
-        rep = "centos-repo"
-        ver = ver or CENTOS.split(":")[1]
-        return self.with_local(rmi, rep, ver, "mirrorlist.centos.org")
-    def with_local_opensuse_mirror(self, ver = None):
-        """ detects a local opensuse mirror or starts a local
-            docker container with a centos repo mirror. It
-            will return the extra_hosts setting to start
-            other docker containers"""
-        rmi = "localhost:5000/mirror-packages"
-        rep = "opensuse-repo"
-        ver = ver or OPENSUSE.split(":")[1]
-        return self.with_local(rmi, rep, ver, "download.opensuse.org")
-    def with_local(self, rmi, rep, ver, *hosts):
-        image = "{rmi}/{rep}:{ver}".format(**locals())
-        container = "{rep}-{ver}".format(**locals())
-        out, err, ok = output3("docker inspect {image}".format(**locals()))
-        image_found = json.loads(out)
-        if not image_found:
-           return {}
-        out, err, ok = output3("docker inspect {container}".format(**locals()))
-        container_found = json.loads(out)
-        if container_found:
-            container_status = container_found[0]["State"]["Status"]
-            logg.info("::: %s -> %s", container, container_status)
-            latest_image_id = image_found[0]["Id"]
-            container_image_id = container_found[0]["Image"]
-            if latest_image_id != container_image_id or container_status not in ["running"]:
-                cmd = "docker rm --force {container}"
-                sx____(cmd.format(**locals()))
-                container_found = []
-        if not container_found:
-            cmd = "docker run --rm=true --detach --name {container} {image}"
-            sh____(cmd.format(**locals()))
-        ip_a = self.ip_container(container)
-        logg.info("::: %s => %s", container, ip_a)
-        return dict(zip(hosts, [ ip_a ] * len(hosts)))
-    def with_local_mirror(self, image):
-        """ attach local centos-repo / opensuse-repo to docker-start enviroment.
-            Effectivly when it is required to 'docker start centos:x.y' then do
-            'docker start centos-repo:x.y' before and extend the original to 
-            'docker start --add-host mirror...:centos-repo centos:x.y'. """
-        hosts = {}
-        if image.startswith("centos:"):
-            version = image[len("centos:"):]
-            hosts = self.with_local_centos_mirror(version)
-        if image.startswith("opensuse/leap:"):
-            version = image[len("opensuse/leap:"):]
-            hosts = self.with_local_opensuse_mirror(version)
-        if image.startswith("opensuse:"):
-            version = image[len("opensuse:"):]
-            hosts = self.with_local_opensuse_mirror(version)
-        if image.startswith("ubuntu:"):
-            version = image[len("ubuntu:"):]
-            hosts = self.with_local_ubuntu_mirror(version)
-        return hosts
-    def add_hosts(self, hosts):
-        return " ".join(["--add-host %s:%s" % (host, ip_a) for host, ip_a in hosts.items() ])
-        # for host, ip_a in mapping.items():
-        #    yield "--add-host {host}:{ip_a}"
     def local_image(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
@@ -364,10 +254,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
         if os.environ.get("NONLOCAL",""):
             return image
-        hosts =  self.with_local_mirror(image)
-        if hosts:
-            add_hosts = self.add_hosts(hosts)
-            logg.debug("%s %s", add_hosts, image)
+        add_hosts = self.start_mirror(image)
+        if add_hosts:
             return "{add_hosts} {image}".format(**locals())
         return image
     def local_addhosts(self, dockerfile):
@@ -383,9 +271,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 break
         logg.debug("--\n-- '%s' FROM '%s'", dockerfile, image)
         if image:
-            hosts = self.with_local_mirror(image)
-            return self.add_hosts(hosts)
+            return self.start_mirror(image)
         return ""
+    def start_mirror(self, image):
+        docker = DOCKER
+        mirror = _mirror
+        cmd = "{mirror} start {image} --add-hosts"
+        out = output(cmd.format(**locals()))
+        return decodes(out).strip()
     def drop_container(self, name):
         cmd = "docker rm --force {name}"
         sx____(cmd.format(**locals()))
@@ -411,9 +304,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
-    def test_100(self):
-        logg.info("\n  CENTOS = '%s'", CENTOS)
-        self.with_local_centos_mirror()
     def test_101_systemctl_testfile(self):
         """ the systemctl.py file to be tested does exist """
         testname = self.testname()
@@ -1727,6 +1617,8 @@ if __name__ == "__main__":
        help="use another python execution engine [%default]")
     _o.add_option("-p","--python", metavar="EXE", default=_python,
        help="override the python execution engine [%default]")
+    _o.add_option("-m","--mirror", metavar="EXE", default=_mirror,
+       help="override the docker_mirror.py [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
@@ -1738,6 +1630,7 @@ if __name__ == "__main__":
     _python = opt.python
     _python2 = opt.python2
     _python3 = opt.python3
+    _dockermirror = opt.mirror
     #
     logfile = None
     if opt.logfile:
