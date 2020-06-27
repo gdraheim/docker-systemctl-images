@@ -1,7 +1,7 @@
 FROM centos:7.7.1908
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4147"
+      __version__="1.5.4256"
 ARG PORT=8080
 EXPOSE $PORT
 
