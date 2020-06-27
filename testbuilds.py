@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.4147"
+__version__ = "1.5.4256"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -800,11 +800,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ls {runtime}postgres/run"
+        uid="postgres"
+        cmd = "docker exec {testname} id -u {uid}"
+        out = output(cmd.format(**locals()))
+        if out: uid = decodes(out).strip()
+        cmd = "docker exec {testname} ls {runtime}{uid}/run"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}postgres/run/postgresql.service.status && break; sleep 2; done'"
+        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:{runtime}postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
+        cmd = "docker cp {testname}:{runtime}{uid}/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
@@ -862,11 +866,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ls {runtime}postgres/run"
+        uid="postgres"
+        cmd = "docker exec {testname} id -u {uid}"
+        out = output(cmd.format(**locals()))
+        if out: uid = decodes(out).strip()
+        cmd = "docker exec {testname} ls {runtime}{uid}/run"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}postgres/run/postgresql.service.status && break; sleep 2; done'"
+        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:{runtime}postgres/run/postgresql.service.status {testdir}/postgresql.service.status"
+        cmd = "docker cp {testname}:{runtime}{uid}/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
