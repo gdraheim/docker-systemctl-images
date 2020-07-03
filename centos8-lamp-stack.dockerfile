@@ -16,10 +16,12 @@ ARG LISTEN=172.0.0.0/8
 EXPOSE 80
 
 COPY files/docker/systemctl.py /usr/bin/systemctl
+RUN sed -i -e "s|/usr/bin/python3|/usr/libexec/platform-python|" /usr/bin/systemctl
 RUN yum install -y dnf-plugins-core
 RUN yum config-manager --set-enabled PowerTools
 RUN yum install -y epel-release
 RUN yum repolist
+
 RUN yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
 RUN sed -i "s|ip 127.0.0.1|ip ${LISTEN}|" ${WEB_CONF}
