@@ -1338,6 +1338,51 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    @unittest.expectedFailure
+    def test_763_centos8_tomcat_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
+            THEN we can create an image with an tomcat service 
+                 being installed and enabled.
+            Addtionally we do check an example application"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="centos8-tomcat.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080/sample"
+        sh____(cmd.format(**locals()))
+        cmd = "grep Hello {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_765_centos7_tomcat_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
