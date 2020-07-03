@@ -5,7 +5,7 @@ FROM centos:8.1.1911
 ###################################################################
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.4256"
+      __version__="1.5.4264"
 EXPOSE 8080
 
 COPY files/docker/systemctl3.py /usr/bin/systemctl
