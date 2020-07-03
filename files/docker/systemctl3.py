@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.4256"
+__version__ = "1.5.4265"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -25,6 +25,7 @@ import select
 import hashlib
 import pwd
 import grp
+import threading
 
 if sys.version[0] == '3':
     basestring = str
@@ -39,12 +40,12 @@ DEBUG_FLOCK = False
 TestListen = False
 TestAccept = False
 
-def logg_debug_flock(*args):
+def logg_debug_flock(format, *args):
     if DEBUG_FLOCK:
-        logg.debug(*args) # pragma: no cover
-def logg_debug_after(*args):
+        logg.debug(format, *args) # pragma: no cover
+def logg_debug_after(format, *args):
     if DEBUG_AFTER:
-        logg.debug(*args) # pragma: no cover
+        logg.debug(format, *args) # pragma: no cover
 
 NOT_A_PROBLEM = 0   # FOUND_OK
 NOT_OK = 1          # FOUND_ERROR
@@ -1072,6 +1073,65 @@ def conf_sortedAfter(conflist, cmp = compareAfter):
         logg_debug_after("[%s] %s", item.rank, item.conf.name())
     return [ item.conf for item in sortedlist ]
 
+class SystemctlListenThread(threading.Thread):
+    def __init__(self, systemctl):
+        threading.Thread.__init__(self, name="listen")
+        self.systemctl = systemctl
+        self.stopped = threading.Event()
+    def stop(self):
+        self.stopped.set()
+    def run(self):
+        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
+        READ_WRITE = READ_ONLY | select.POLLOUT
+        me = os.getpid()
+        if DEBUG_INITLOOP: # pragma: no cover
+            logg.info("[%s] listen: new thread", me)
+        if not self.systemctl._sockets:
+            return
+        if DEBUG_INITLOOP: # pragma: no cover
+            logg.info("[%s] listen: start thread", me)
+        listen = select.poll()
+        for sock in self.systemctl._sockets.values():
+            listen.register(sock, READ_ONLY)
+            sock.listen()
+            logg.debug("[%s] listen: %s :%s", me, sock.name(), sock.addr())
+        timestamp = time.time()
+        while not self.stopped.is_set():
+            try:
+                sleep_sec = InitLoopSleep - (time.time() - timestamp)
+                if sleep_sec < MinimumYield:
+                    sleep_sec = MinimumYield
+                sleeping = sleep_sec
+                while sleeping > 2:
+                    time.sleep(1) # accept signals atleast every second
+                    sleeping = InitLoopSleep - (time.time() - timestamp)
+                    if sleeping < MinimumYield:
+                       sleeping = MinimumYield
+                       break
+                time.sleep(sleeping) # remainder waits less that 2 seconds
+                if DEBUG_INITLOOP: # pragma: no cover
+                    logg.debug("[%s] listen: poll", me)
+                accepting = listen.poll(100) # milliseconds
+                if DEBUG_INITLOOP: # pragma: no cover
+                    logg.debug("[%s] listen: poll (%s)", me, len(accepting))
+                for sock_fileno, event in accepting:
+                    for sock in self.systemctl._sockets.values():
+                        if sock.fileno() == sock_fileno:
+                            if not self.stopped.is_set():
+                                if self.systemctl.loop.acquire():
+                                    logg.debug("[%s] listen: accept %s :%s", me, sock.name(), sock_fileno)
+                                    self.systemctl.do_accept_socket_from(sock.conf, sock.sock)
+            except Exception as e:
+                logg.info("[%s] listen: interrupted - exception %s", me, e)
+                raise
+        for sock in self.systemctl._sockets.values():
+            try:
+                listen.unregister(sock)
+                sock.close()
+            except Exception as e:
+                logg.warning("[%s] listen: close socket: %s", me, e)
+        return
+
 class Systemctl:
     def __init__(self):
         self.error = NOT_A_PROBLEM # program exitcode or process returncode
@@ -1114,6 +1174,7 @@ class Systemctl:
         self._restarted_unit = {}
         self._restart_failed_units = {}
         self._sockets = {}
+        self.loop = threading.Lock()
     def user(self):
         return self._user_getlogin
     def user_mode(self):
@@ -4626,7 +4687,22 @@ class Systemctl:
                 except Exception as e:
                     logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
                     badgroups += 1
-        if not abspath and not notexists and not badusers and not badgroups:
+        dirproblems = 0
+        for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
+            "RuntimeDirectory", "StateDirectory", "CacheDirectory", "LogsDirectory", "ConfigurationDirectory",
+            "RuntimeDirectoryMode", "StateDirectoryMode", "CacheDirectoryMode", "LogsDirectoryMode", "ConfigurationDirectoryMode",
+            "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
+            setting_value = conf.get(section, setting, "")
+            if setting_value:
+                logg.warning("%s: %s directory path not implemented: %s=%s", unit, section, setting, setting_value)
+                dirproblems += 1
+        for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser", 
+            "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
+            setting_yes = conf.getbool(section, setting, "no")
+            if setting_yes:
+                logg.warning("%s: %s directory option not supported: %s=yes", unit, section, setting)
+                dirproblems += 1
+        if not abspath and not notexists and not badusers and not badgroups and not dirproblems:
             return True
         if True:
             filename = strE(conf.filename())
@@ -4640,6 +4716,9 @@ class Systemctl:
                 time.sleep(1)
             if badusers or badgroups:
                 logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
+                time.sleep(1)
+            if dirproblems:
+                logg.error(" Oops, %s unsupported directory settings. You need to create those before using the service.", dirproblems)
                 time.sleep(1)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
@@ -5318,17 +5397,13 @@ class Systemctl:
         signal.signal(signal.SIGQUIT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGQUIT"))
         signal.signal(signal.SIGINT, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGINT"))
         signal.signal(signal.SIGTERM, lambda signum, frame: ignore_signals_and_raise_keyboard_interrupt("SIGTERM"))
-        READ_ONLY = select.POLLIN | select.POLLPRI | select.POLLHUP | select.POLLERR
-        READ_WRITE = READ_ONLY | select.POLLOUT
         #
         self.start_log_files(units)
-        listen = None
-        if self._sockets:
-            listen = select.poll()
-            for sock in self._sockets.values():
-                listen.register(sock, READ_ONLY)
-                sock.listen()
-                logg.debug("%s: listen %s", sock.name(), sock.addr())
+        logg.debug("start listen")
+        listen = SystemctlListenThread(self)
+        logg.debug("starts listen")
+        listen.start()
+        logg.debug("started listen")
         self.sysinit_status(ActiveState = "active", SubState = "running")
         timestamp = time.time()
         result = None
@@ -5339,25 +5414,16 @@ class Systemctl:
                 sleep_sec = InitLoopSleep - (time.time() - timestamp)
                 if sleep_sec < MinimumYield:
                     sleep_sec = MinimumYield
-                if listen is not None:
-                    sleep_ms = int(sleep_sec * 1000)
-                    logg.debug("POLL %s sockets (sleep %sms)", len(self._sockets), sleep_ms)
-                    accepting = listen.poll(sleep_ms)
-                    for sock_fileno, event in accepting:
-                        for sock in self._sockets.values():
-                            if sock.fileno() == sock_fileno:
-                                logg.debug("%s: accepting %s", sock.name(), sock_fileno)
-                                self.do_accept_socket_from(sock.conf, sock.sock)
-                else:
-                    sleeping = sleep_sec
-                    while sleeping > 2:
-                        time.sleep(1)
-                        sleeping = InitLoopSleep - (time.time() - timestamp)
-                        if sleeping < MinimumYield:
-                           sleeping = MinimumYield
-                           break
-                    time.sleep(sleeping)
+                sleeping = sleep_sec
+                while sleeping > 2:
+                    time.sleep(1) # accept signals atleast every second
+                    sleeping = InitLoopSleep - (time.time() - timestamp)
+                    if sleeping < MinimumYield:
+                       sleeping = MinimumYield
+                       break
+                time.sleep(sleeping) # remainder waits less that 2 seconds
                 timestamp = time.time()
+                self.loop.acquire()
                 if DEBUG_INITLOOP: # pragma: no cover
                     logg.debug("NEXT InitLoop (after %ss)", sleep_sec)
                 self.read_log_files(units)
@@ -5382,6 +5448,7 @@ class Systemctl:
                         break
                 if RESTART_FAILED_UNITS:
                     self.restart_failed_units(units)
+                self.loop.release()
             except KeyboardInterrupt as e:
                 if e.args and e.args[0] == "SIGQUIT":
                     # the original systemd puts a coredump on that signal.
@@ -5397,13 +5464,10 @@ class Systemctl:
                 logg.info("interrupted - exception %s", e)
                 raise
         self.sysinit_status(ActiveState = None, SubState = "degraded")
-        if listen is not None and self._sockets:
-            for sock in self._sockets.values():
-                try:
-                    listen.unregister(sock)
-                    sock.close()
-                except Exception as e:
-                    logg.warning("close socket: %s", e)
+        try: self.loop.release()
+        except: pass
+        listen.stop()
+        listen.join(2)
         self.read_log_files(units)
         self.read_log_files(units)
         self.stop_log_files(units)
