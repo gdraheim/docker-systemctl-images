@@ -1100,6 +1100,51 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    @unittest.expectedFailure
+    def test_732_centos8_lamp_stack(self):
+        """ Check setup of Linux/Mariadb/Apache/Php on CentOs 8 with python3"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:7")
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        name="centos8-lamp-stack"
+        dockerfile="centos8-lamp-stack.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        # THEN
+        time.sleep(5)
+        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_740_opensuse14_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
