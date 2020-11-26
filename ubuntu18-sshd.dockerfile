@@ -1,0 +1,26 @@
+FROM "ubuntu:18.04"
+
+LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
+      __version__="1.5.4264"
+ARG PASSWORD=Test.P@ssw0rd
+EXPOSE 22
+
+RUN apt-get update
+RUN apt-get install -y python3
+COPY files/docker/systemctl3.py /usr/bin/systemctl
+RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
+
+# RUN apt-get install -y passwd
+RUN apt-cache search sshd
+RUN apt-get install -y openssh-server
+RUN rm -fv /etc/ssh/sshd_not_to_be_run
+RUN systemctl enable sshd
+#
+RUN useradd -g nogroup testuser -m
+RUN echo testuser:$PASSWORD | chpasswd
+RUN cat /etc/passwd
+RUN date -I > /home/testuser/date.txt
+# RuntimeDirectory=sshd
+# RuntimeDirectoryMode=0755
+RUN mkdir /run/sshd
+CMD /usr/bin/systemctl -1
