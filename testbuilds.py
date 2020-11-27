@@ -1687,6 +1687,65 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
         # logg.warning("the scp call will succeed only once - the sshd is dead after that")
+    def test_685_opensuse15_ssh_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
+            THEN we can create an image with an ssh service 
+                 being installed and enabled.
+            Addtionally we do check an example application"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="opensuse15-sshd.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2; docker exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        cmd = "sleep 2; docker exec {testname} ps axu"
+        sx____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl is-system-running"
+        sx____(cmd.format(**locals()))
+        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
+        sh____(cmd.format(**locals()))
+        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+        # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
+        # logg.warning("the scp call will succeed only once - the sshd is dead after that")
     def test_688_ubuntu18_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 18, 
             THEN we can create an image with an ssh service 
