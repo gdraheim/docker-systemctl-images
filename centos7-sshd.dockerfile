@@ -21,5 +21,5 @@ RUN yum install -y openssh-clients
 RUN rpm -q --list openssh-clients
 RUN useradd -g nobody testuser
 RUN echo $PASSWORD | passwd --stdin testuser
-RUN date -I > /home/testuser/date.txt
+RUN TZ=UTC date -I > /home/testuser/date.txt
 CMD /usr/bin/systemctl

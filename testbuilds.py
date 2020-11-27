@@ -1605,7 +1605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep `date -I` {testdir}/{testname}.date.txt"
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
@@ -1660,7 +1660,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep `date -I` {testdir}/{testname}.date.txt"
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
@@ -1714,12 +1714,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep `date -I` {testdir}/{testname}.date.txt"
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date2.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep `date -I` {testdir}/{testname}.date.txt"
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))

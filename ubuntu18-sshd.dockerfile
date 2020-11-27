@@ -19,7 +19,7 @@ RUN systemctl enable sshd
 RUN useradd -g nogroup testuser -m
 RUN echo testuser:$PASSWORD | chpasswd
 RUN cat /etc/passwd
-RUN date -I > /home/testuser/date.txt
+RUN TZ=UTC date -I > /home/testuser/date.txt
 # RuntimeDirectory=sshd
 # RuntimeDirectoryMode=0755
 RUN mkdir /run/sshd
