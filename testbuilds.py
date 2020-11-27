@@ -1574,7 +1574,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_678_centos7_ssh_dockerfile(self):
+    def test_677_centos7_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -1607,6 +1607,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
+        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
@@ -1621,9 +1625,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-        logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
-        logg.warning("the scp call will succeed only once - the sshd is dead after that")
-    def test_679_centos8_ssh_dockerfile(self):
+        # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
+        # logg.warning("the scp call will succeed only once - the sshd is dead after that")
+    def test_678_centos8_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -1662,6 +1666,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
+        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
+        sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
@@ -1676,8 +1685,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-        logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
-        logg.warning("the scp call will succeed only once - the sshd is dead after that")
+        # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
+        # logg.warning("the scp call will succeed only once - the sshd is dead after that")
     def test_688_ubuntu18_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 18, 
             THEN we can create an image with an ssh service 
@@ -1717,9 +1726,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
-        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date2.txt"
+        cmd = "sshpass -p Test.P@ssw0rd scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
-        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
+        cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
