@@ -655,7 +655,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_220_ubuntu_apache2(self):
+    def test_214_ubuntu_apache2(self):
         """ WHEN using a systemd enabled Ubuntu as the base image
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -667,7 +667,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
-        self.skipTest("test_721 makes it through a dockerfile")
+        self.skipTest("test_216 makes it through a dockerfile")
         testname = self.testname()
         testdir = self.testdir()
         saveto = SAVETO
@@ -726,7 +726,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_221_ubuntu16_apache2(self):
+    def test_216_ubuntu16_apache2(self):
         """ WHEN using a dockerfile for systemd enabled Ubuntu 16 with python2
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -772,7 +772,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_722_ubuntu18_apache2(self):
+    def test_218_ubuntu18_apache2(self):
         """ WHEN using a dockerfile for systemd enabled Ubuntu 18 with python3
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -787,6 +787,54 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         dockerfile="ubuntu18-apache2.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_215_opensuse15_apache2_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python3
+        testname=self.testname()
+        testdir = self.testdir()
+        name="opensuse15-apache2"
+        dockerfile="opensuse15-apache2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
