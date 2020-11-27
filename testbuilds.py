@@ -1282,6 +1282,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # WHEN
         cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "docker run -d --name {testname} {images}:{testname}"
