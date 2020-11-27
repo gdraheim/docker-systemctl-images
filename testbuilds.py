@@ -1290,13 +1290,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
+        cmd = "docker stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
