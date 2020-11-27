@@ -1416,6 +1416,59 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_358_ubuntu8_redis_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled Ubuntu15 and redis, 
+            THEN check that redis replies to 'ping' with a 'PONG' """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="ubuntu18-redis.dockerfile"
+        addhosts = "" #FIXME# self.local_addhosts(dockerfile) 
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep PONG {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_382_centos8_mongod_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled centos8 and mongod, 
             check that mongo can reply witha  hostInfo."""
