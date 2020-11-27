@@ -1257,6 +1257,57 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_355_opensuse15_redis_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can see a specific role with an SQL query
+            because the test script has created a new user account 
+            in the in the database with a known password. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="opensuse15-redis.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep PONG {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_531_centos7_lamp_stack(self):
         """ Check setup of Linux/Mariadb/Apache/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
