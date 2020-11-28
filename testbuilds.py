@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
-__version__ = "1.5.4264"
+__version__ = "1.5.4476"
 
 ## NOTE:
 ## The testcases 1000...4999 are using a --root=subdir environment
@@ -1375,6 +1375,64 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "docker stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_349_centos9_redis_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
+            THEN check that redis replies to 'ping' with a 'PONG' """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        testname=self.testname()
+        testdir = self.testdir()
+        dockerfile="centos8-redis-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep PONG {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # 
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "root"))
         # SAVE
         cmd = "docker stop {testname}-client"
         sh____(cmd.format(**locals()))
