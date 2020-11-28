@@ -951,8 +951,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
+        testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -962,7 +964,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -1006,8 +1008,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
+        testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1017,7 +1021,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -1059,8 +1063,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
+        testpass = "Pass."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1070,7 +1076,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -1112,8 +1118,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
+        testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1123,7 +1131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -1161,8 +1169,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         runtime = RUNTIME
+        password = self.newpassword()
+        testpass = "Pass."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1172,7 +1182,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -1227,8 +1237,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         runtime = RUNTIME
+        password = self.newpassword()
+        testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1238,7 +1250,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD=Testuser.11"
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
