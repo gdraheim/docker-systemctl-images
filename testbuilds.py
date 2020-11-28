@@ -1723,7 +1723,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_531_centos7_lamp_stack(self):
-        """ Check setup of Linux/Mariadb/Apache/Php on CentOs 7 with python2"""
+        """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
@@ -1737,8 +1737,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1768,7 +1769,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
     @unittest.expectedFailure
     def test_532_centos8_lamp_stack(self):
-        """ Check setup of Linux/Mariadb/Apache/Php on CentOs 8 with python3"""
+        """ Check setup of Linux/Apache/Mariadb/Php on CentOs 8 with python3"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:7")
@@ -1782,8 +1783,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1812,7 +1814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_540_opensuse14_lamp_stack(self):
-        """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse"""
+        """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir()
@@ -1854,7 +1856,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_541_opensuse15_lamp_stack_php7(self):
-        """ Check setup of Linux/Mariadb/Apache/Php" on Opensuse later than 15.x"""
+        """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         testname=self.testname()
         testdir = self.testdir()
@@ -1866,8 +1868,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
         cmd = "docker rm --force {testname}"
         sx____(cmd.format(**locals()))

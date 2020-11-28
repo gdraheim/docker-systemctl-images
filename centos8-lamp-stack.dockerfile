@@ -11,7 +11,7 @@ ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/etc/phpMyAdmin/config.inc.php"
 ENV INDEX_PHP="/var/www/html/index.php"
 ARG USERNAME=testuser_ok
-ARG PASSWORD=Testuser.OK
+ARG PASSWORD=P@ssw0rd.548e779ca48f8c10ed3271298be06742d8ba
 ARG LISTEN=172.0.0.0/8
 EXPOSE 80
 
