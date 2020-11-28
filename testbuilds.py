@@ -1767,7 +1767,6 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    @unittest.expectedFailure
     def test_532_centos8_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 8 with python3"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1794,7 +1793,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         container = self.ip_container(testname)
         # THEN
-        time.sleep(5)
+        for attempt in xrange(10):
+            time.sleep(1)
+            cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+            out, err, end = output3(cmd.format(**locals()))
+            if "503 Service Unavailable" in err:
+                logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
+                continue
+            if "200 OK" in err:
+                logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
+                break
+            logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
