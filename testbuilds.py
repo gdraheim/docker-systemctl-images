@@ -18,6 +18,8 @@ import unittest
 import shutil
 import inspect
 import types
+import string
+import random
 import logging
 import re
 from fnmatch import fnmatchcase as fnmatch
@@ -50,6 +52,7 @@ RUNTIME = "/tmp/run-"
 
 _maindir = os.path.dirname(sys.argv[0])
 _mirror = os.path.join(_maindir, "docker_mirror.py")
+_password = ""
 
 def decodes(text):
     if text is None: return None
@@ -238,6 +241,19 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.isdir(root_folder):
             os.makedirs(root_folder)
         return os.path.abspath(root_folder)
+    def newpassword(self):
+        if _password:
+            return _password
+        out = "Password."
+        out += random.choice(string.ascii_uppercase)
+        out += random.choice(string.ascii_lowercase)
+        out += random.choice(string.ascii_lowercase)
+        out += random.choice(string.ascii_lowercase)
+        out += random.choice(string.ascii_lowercase)
+        out += random.choice(",.-+")
+        out += random.choice("0123456789")
+        out += random.choice("0123456789")
+        return out
     def user(self):
         import getpass
         getpass.getuser()
@@ -1469,6 +1485,66 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_365_opensuse15_redis_user_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
+            THEN check that redis replies to 'ping' with a 'PONG' 
+            AND that AUTH works along with a USER process"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        python = _python or _python3
+        testname=self.testname()
+        testdir = self.testdir()
+        password = self.newpassword()
+        dockerfile="opensuse15-redis-user.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        psql = PSQL_TOOL
+        # WHEN
+        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sx____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 2"
+        sh____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        sh____(cmd.format(**locals()))
+        # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        # sh____(cmd.format(**locals()))
+        cmd = "docker exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep PONG {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
+        # USER
+        cmd = "docker exec {testname} ps axu"
+        out, end = output2(cmd.format(**locals()))
+        logg.info(" %s =>%s\n%s", cmd, end, out)
+        self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "docker stop {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}-client"
+        sh____(cmd.format(**locals()))
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_382_centos8_mongod_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled centos8 and mongod, 
             check that mongo can reply witha  hostInfo."""
@@ -2470,6 +2546,8 @@ if __name__ == "__main__":
        help="override the docker_mirror.py [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file [%default]")
+    _o.add_option("-P","--password", metavar="PASSWORD", default="",
+       help="use a fixed password for examples with auth [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
        help="capture results as a junit xml file [%default]")
     opt, args = _o.parse_args()
@@ -2480,6 +2558,7 @@ if __name__ == "__main__":
     _python2 = opt.python2
     _python3 = opt.python3
     _dockermirror = opt.mirror
+    _password = opt.password
     #
     logfile = None
     if opt.logfile:
