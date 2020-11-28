@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.4264"
+__version__ = "1.5.4476"
 
 import logging
 logg = logging.getLogger("systemctl")
@@ -20,6 +20,7 @@ import signal
 import time
 import socket
 import datetime
+import string
 import fcntl
 import select
 import hashlib
@@ -56,6 +57,8 @@ NOT_FOUND = 4       # FOUND_UNKNOWN
 _extra_vars = []
 _force = False
 _full = False
+_log_lines = 0
+_no_pager = False
 _now = False
 _no_reload = False
 _no_legend = False
@@ -66,6 +69,7 @@ _root = ""
 _unit_type = None
 _unit_state = None
 _unit_property = None
+_what_kind = ""
 _show_all = False
 _user_mode = False
 
@@ -160,6 +164,10 @@ EXPAND_KEEP_VARS = True
 RESTART_FAILED_UNITS = True
 ACTIVE_IF_ENABLED=False
 
+TAIL_CMD = "/usr/bin/tail"
+LESS_CMD = "/usr/bin/less"
+CAT_CMD = "/usr/bin/cat"
+
 # The systemd default was NOTIFY_SOCKET="/var/run/systemd/notify"
 _notify_socket_folder = "{RUN}/systemd" # alias /run/systemd
 _journal_log_folder = "{LOG}/journal"
@@ -243,6 +251,9 @@ def to_list(value):
     if isinstance(value, tuple):
         return list(value)
     return str(value or "").split(",")
+def int_mode(value):
+    try: return int(value, 8)
+    except: return None # pragma: no cover
 def unit_of(module):
     if "." not in module:
         return module + ".service"
@@ -291,6 +302,15 @@ def path_replace_extension(path, old, new):
     if path.endswith(old):
         path = path[:-len(old)]
     return path + new
+
+def get_PAGER():
+    PAGER = os.environ.get("PAGER", "less")
+    pager = os.environ.get("SYSTEMD_PAGER", "{PAGER}").format(**locals())
+    options = os.environ.get("SYSTEMD_LESS", "FRSXMK") # see 'man timedatectl'
+    if not pager: pager = "cat"
+    if "less" in pager and options:
+        return [ pager, "-" + options ]
+    return [ pager ]
 
 def os_getlogin():
     """ NOT using os.getlogin() """
@@ -403,6 +423,15 @@ def expand_path(path, root = False):
     XDG_RUNTIME_DIR=get_RUNTIME_DIR(root)
     return os.path.expanduser(path.replace("${","{").format(**locals()))
 
+def shutil_chown(path, user, group):
+    if user or group:
+        uid, gid = -1, -1
+        if user:
+            uid = pwd.getpwnam(user).pw_uid
+            gid = pwd.getpwnam(user).pw_gid
+        if group:
+            gid = grp.getgrnam(group).gr_gid
+        os.chown(path, uid, gid)
 def shutil_fchown(fileno, user, group):
     if user or group:
         uid, gid = -1, -1
@@ -1458,6 +1487,10 @@ class Systemctl:
         if ext in [".service", ".socket", ".target"]:
             return ext[1:]
         return None
+    def get_unit_section(self, module, default = "Service"):
+        return string.capwords(self.get_unit_type(module) or default)
+    def get_unit_section_from(self, conf, default = "Service"):
+        return self.get_unit_section(conf.name(), default)
     def match_sysd_templates(self, modules = None, suffix=".service"): # -> generate[ unit ]
         """ make a file glob on all known template units (systemd areas).
             It returns no modules (!!) if no modules pattern were given.
@@ -2080,8 +2113,10 @@ class Systemctl:
                 return confs[m.group(1)]
             logg.warning("can not expand %%%s", m.group(1))
             return ""
-        result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
-        #++# logg.info("expanded => %s", result)
+        result = ""
+        if cmd:
+            result = re.sub("[%](.)", lambda m: get_conf1(m), cmd)
+            #++# logg.info("expanded => %s", result)
         return result
     ExecMode = collections.namedtuple("ExecMode", ["check"])
     def exec_newcmd(self, cmd, env, conf):
@@ -2111,6 +2146,377 @@ class Systemctl:
             # newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), part) ]
             newcmd += [ re.sub("[$][{](\w+)[}]", lambda m: get_env2(m), self.expand_special(part, conf)) ]
         return newcmd
+    def remove_service_directories(self, conf, section = "Service"):
+        ok = True
+        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        keepRuntimeDirectory = self.get_RuntimeDirectoryPreserve(conf, section)
+        if not keepRuntimeDirectory:
+            root = conf.root_mode()
+            for name in nameRuntimeDirectory.split(" "):
+                if not name.strip(): continue
+                RUN = get_RUNTIME_DIR(root)
+                path = os.path.join(RUN, name)
+                dirpath = os_path(self._root, path)
+                ok = self.do_rm_tree(dirpath) and ok
+        if not ok:
+            logg.debug("could not fully remove service directory %s", path)
+        return ok
+    def do_rm_tree(self, path):
+        ok = True
+        if os.path.isdir(path):
+            for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+                for item in filenames:
+                    filepath = os.path.join(dirpath, item)
+                    try: 
+                        os.remove(filepath)
+                    except Exception as e: # pragma: no cover
+                        logg.debug("not removed file: %s (%s)", filepath, e)
+                        ok = False
+                for item in dirnames:
+                    dir_path = os.path.join(dirpath, item)
+                    try:
+                        os.rmdir(dir_path)
+                    except Exception as e: # pragma: no cover
+                        logg.debug("not removed dir: %s (%s)", dir_path, e)
+                        ok = False
+            try: 
+                os.rmdir(path)
+            except Exception as e: 
+                logg.debug("not removed top dir: %s (%s)", path, e)
+                ok = False # pragma: no cover
+        logg.debug("%s rm_tree %s", ok and "done" or "fail", path)
+        return ok
+    def get_RuntimeDirectoryPreserve(self, conf, section = "Service"):
+        return conf.getbool(section, "RuntimeDirectoryPreserve", "no")
+    def get_RuntimeDirectory(self, conf, section = "Service"):
+        return self.expand_special(conf.get(section, "RuntimeDirectory", ""), conf)
+    def get_StateDirectory(self, conf, section = "Service"):
+        return self.expand_special(conf.get(section, "StateDirectory", ""), conf)
+    def get_CacheDirectory(self, conf, section = "Service"):
+        return self.expand_special(conf.get(section, "CacheDirectory", ""), conf)
+    def get_LogsDirectory(self, conf, section = "Service"): 
+        return self.expand_special(conf.get(section, "LogsDirectory", ""), conf)
+    def get_ConfigurationDirectory(self, conf, section = "Service"):
+        return self.expand_special(conf.get(section, "ConfigurationDirectory", ""), conf)
+    def get_RuntimeDirectoryMode(self, conf, section = "Service"):
+        return conf.get(section, "RuntimeDirectoryMode", "")
+    def get_StateDirectoryMode(self, conf, section = "Service"):
+        return conf.get(section, "StateDirectoryMode", "")
+    def get_CacheDirectoryMode(self, conf, section = "Service"):
+        return conf.get(section, "CacheDirectoryMode", "")
+    def get_LogsDirectoryMode(self, conf, section = "Service"): 
+        return conf.get(section, "LogsDirectoryMode", "")
+    def get_ConfigurationDirectoryMode(self, conf, section = "Service"):
+        return conf.get(section, "ConfigurationDirectoryMode", "")
+    def clean_service_directories(self, conf, which = ""):
+        ok = True
+        section = self.get_unit_section_from(conf)
+        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        nameStateDirectory = self.get_StateDirectory(conf, section)
+        nameCacheDirectory = self.get_CacheDirectory(conf, section)
+        nameLogsDirectory = self.get_LogsDirectory(conf, section)
+        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        root = conf.root_mode()
+        for name in nameRuntimeDirectory.split(" "):
+            if not name.strip(): continue
+            RUN = get_RUNTIME_DIR(root)
+            path = os.path.join(RUN, name)
+            if which in ["all", "runtime", ""]:
+                dirpath = os_path(self._root, path)
+                ok = self.do_rm_tree(dirpath) and ok
+        for name in nameStateDirectory.split(" "):
+            if not name.strip(): continue
+            DAT = get_VARLIB_HOME(root)
+            path = os.path.join(DAT, name)
+            if which in ["all", "state"]:
+                dirpath = os_path(self._root, path)
+                ok = self.do_rm_tree(dirpath) and ok
+        for name in nameCacheDirectory.split(" "):
+            if not name.strip(): continue
+            CACHE = get_CACHE_HOME(root)
+            path = os.path.join(CACHE, name)
+            if which in ["all", "cache", ""]:
+                dirpath = os_path(self._root, path)
+                ok = self.do_rm_tree(dirpath) and ok
+        for name in nameLogsDirectory.split(" "):
+            if not name.strip(): continue
+            LOGS = get_LOG_DIR(root)
+            path = os.path.join(LOGS, name)
+            if which in ["all", "logs"]:
+                dirpath = os_path(self._root, path)
+                ok = self.do_rm_tree(dirpath) and ok
+        for name in nameConfigurationDirectory.split(" "):
+            if not name.strip(): continue
+            CONFIG = get_CONFIG_HOME(root)
+            path = os.path.join(CONFIG, name)
+            if which in ["all", "configuration", ""]:
+                dirpath = os_path(self._root, path)
+                ok = self.do_rm_tree(dirpath) and ok
+        return ok
+    def env_service_directories(self, conf):
+        envs = {}
+        section = self.get_unit_section_from(conf)
+        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        nameStateDirectory = self.get_StateDirectory(conf, section)
+        nameCacheDirectory = self.get_CacheDirectory(conf, section)
+        nameLogsDirectory = self.get_LogsDirectory(conf, section)
+        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        root = conf.root_mode()
+        for name in nameRuntimeDirectory.split(" "):
+            if not name.strip(): continue
+            RUN = get_RUNTIME_DIR(root)
+            path = os.path.join(RUN, name)
+            envs["RUNTIME_DIRECTORY"] = path
+        for name in nameStateDirectory.split(" "):
+            if not name.strip(): continue
+            DAT = get_VARLIB_HOME(root)
+            path = os.path.join(DAT, name)
+            envs["STATE_DIRECTORY"] = path
+        for name in nameCacheDirectory.split(" "):
+            if not name.strip(): continue
+            CACHE = get_CACHE_HOME(root)
+            path = os.path.join(CACHE, name)
+            envs["CACHE_DIRECTORY"] = path
+        for name in nameLogsDirectory.split(" "):
+            if not name.strip(): continue
+            LOGS = get_LOG_DIR(root)
+            path = os.path.join(LOGS, name)
+            envs["LOGS_DIRECTORY"] = path
+        for name in nameConfigurationDirectory.split(" "):
+            if not name.strip(): continue
+            CONFIG = get_CONFIG_HOME(root)
+            path = os.path.join(CONFIG, name)
+            envs["CONFIGURATION_DIRECTORY"] = path
+        return envs
+    def create_service_directories(self, conf):
+        envs = {}
+        section = self.get_unit_section_from(conf)
+        nameRuntimeDirectory = self.get_RuntimeDirectory(conf, section)
+        modeRuntimeDirectory = self.get_RuntimeDirectoryMode(conf, section)
+        nameStateDirectory = self.get_StateDirectory(conf, section)
+        modeStateDirectory = self.get_StateDirectoryMode(conf, section)
+        nameCacheDirectory = self.get_CacheDirectory(conf, section)
+        modeCacheDirectory = self.get_CacheDirectoryMode(conf, section)
+        nameLogsDirectory = self.get_LogsDirectory(conf, section)
+        modeLogsDirectory = self.get_LogsDirectoryMode(conf, section)
+        nameConfigurationDirectory = self.get_ConfigurationDirectory(conf, section)
+        modeConfigurationDirectory = self.get_ConfigurationDirectoryMode(conf, section)
+        root = conf.root_mode()
+        user = self.get_User(conf)
+        group = self.get_Group(conf)
+        for name in nameRuntimeDirectory.split(" "):
+            if not name.strip(): continue
+            RUN = get_RUNTIME_DIR(root)
+            path = os.path.join(RUN, name)
+            logg.debug("RuntimeDirectory %s", path)
+            self.make_service_directory(path, modeRuntimeDirectory)
+            self.chown_service_directory(path, user, group)
+            envs["RUNTIME_DIRECTORY"] = path
+        for name in nameStateDirectory.split(" "):
+            if not name.strip(): continue
+            DAT = get_VARLIB_HOME(root)
+            path = os.path.join(DAT, name)
+            logg.debug("StateDirectory %s", path)
+            self.make_service_directory(path, modeStateDirectory)
+            self.chown_service_directory(path, user, group)
+            envs["STATE_DIRECTORY"] = path
+        for name in nameCacheDirectory.split(" "):
+            if not name.strip(): continue
+            CACHE = get_CACHE_HOME(root)
+            path = os.path.join(CACHE, name)
+            logg.debug("CacheDirectory %s", path)
+            self.make_service_directory(path, modeCacheDirectory)
+            self.chown_service_directory(path, user, group)
+            envs["CACHE_DIRECTORY"] = path
+        for name in nameLogsDirectory.split(" "):
+            if not name.strip(): continue
+            LOGS = get_LOG_DIR(root)
+            path = os.path.join(LOGS, name)
+            logg.debug("LogsDirectory %s", path)
+            self.make_service_directory(path, modeLogsDirectory)
+            self.chown_service_directory(path, user, group)
+            envs["LOGS_DIRECTORY"] = path
+        for name in nameConfigurationDirectory.split(" "):
+            if not name.strip(): continue
+            CONFIG = get_CONFIG_HOME(root)
+            path = os.path.join(CONFIG, name)
+            logg.debug("ConfigurationDirectory %s", path)
+            self.make_service_directory(path, modeConfigurationDirectory)
+            # not done according the standard
+            # self.chown_service_directory(path, user, group)
+            envs["CONFIGURATION_DIRECTORY"] = path
+        return envs
+    def make_service_directory(self, path, mode):
+        ok = True
+        dirpath = os_path(self._root, path)
+        if not os.path.isdir(dirpath):
+            try: 
+                os.makedirs(dirpath)
+                logg.info("created directory path: %s", dirpath)
+            except Exception as e: # pragma: no cover
+                logg.debug("errors directory path: %s\n\t%s", dirpath, e)
+                ok = False
+            filemode = int_mode(mode)
+            if filemode:
+                try:
+                    os.chmod(dirpath, filemode)
+                except Exception as e: # pragma: no cover
+                    logg.debug("errors directory path: %s\n\t%s", dirpath, e)
+                    ok = False
+        else:
+            logg.debug("path did already exist: %s", dirpath)
+        if not ok:
+            logg.debug("could not fully create service directory %s", path)
+        return ok
+    def chown_service_directory(self, path, user, group):
+        # the standard defines an optimization so that if the parent
+        # directory does have the correct user and group then there
+        # is no other chown on files and subdirectories to be done.
+        dirpath = os_path(self._root, path)
+        if not os.path.isdir(dirpath):
+            logg.debug("chown did not find %s", dirpath)
+            return True
+        if user or group:
+            st = os.stat(dirpath)
+            st_user = pwd.getpwuid(st.st_uid).pw_name
+            st_group = grp.getgrgid(st.st_gid).gr_name
+            change = False
+            if user and (user.strip() != st_user and user.strip() != str(st.st_uid)):
+                change = True
+            if group and (group.strip() != st_group and group.strip() != str(st.st_gid)):
+                change = True
+            if change:
+                logg.debug("do chown %s", dirpath)
+                try:
+                    ok = self.do_chown_tree(dirpath, user, group)
+                    logg.info("changed %s:%s %s", user, group, ok)
+                    return ok
+                except Exception as e:
+                    logg.info("oops %s\n\t%s", dirpath, e)
+            else:
+                logg.debug("untouched %s", dirpath)
+        return True
+    def do_chown_tree(self, path, user, group):
+        ok = True
+        uid, gid = -1, -1
+        if user:
+            uid = pwd.getpwnam(user).pw_uid
+            gid = pwd.getpwnam(user).pw_gid
+        if group:
+            gid = grp.getgrnam(group).gr_gid
+        for dirpath, dirnames, filenames in os.walk(path, topdown=False):
+            for item in filenames:
+                filepath = os.path.join(dirpath, item)
+                try: 
+                    os.chown(filepath, uid, gid)
+                except Exception as e: # pragma: no cover
+                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, filepath, e)
+                    ok = False
+            for item in dirnames:
+                dir_path = os.path.join(dirpath, item)
+                try: 
+                    os.chown(dir_path, uid, gid)
+                except Exception as e: # pragma: no cover
+                    logg.debug("could not set %s:%s on %s\n\t%s", user, group, dir_path, e)
+                    ok = False
+        try: 
+            os.chown(path, uid, gid)
+        except Exception as e: # pragma: no cover
+            logg.debug("could not set %s:%s on %s\n\t%s", user, group, path, e)
+            ok = False
+        if not ok:
+            logg.debug("could not chown %s:%s service directory %s", user, group, path)
+        return ok
+    def clean_modules(self, *modules):
+        """ [UNIT]... -- remove the state directories
+        /// it recognizes --what=all or any of configuration, state, cache, logs, runtime
+            while an empty value (the default) removes cache and runtime directories"""
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units(to_list(module))
+            if not matched:
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        lines = _log_lines
+        follow = _force
+        ok = self.clean_units(units)
+        return ok and found_all
+    def clean_units(self, units, what = ""):
+        if not what:
+            what = _what_kind
+        ok = True
+        for unit in units:
+            ok = self.clean_unit(unit, what) and ok
+        return ok
+    def clean_unit(self, unit, what = ""):
+        conf = self.load_unit_conf(unit)
+        if not conf: return False
+        return self.clean_unit_from(conf, what)
+    def clean_unit_from(self, conf, what):
+        if self.is_active_from(conf):
+            logg.warning("can not clean active unit: %s", conf.name())
+            return False
+        return self.clean_service_directories(conf, what)
+    def log_modules(self, *modules):
+        """ [UNIT]... -- start 'less' on the log files for the services
+        /// use '-f' to follow and '-n lines' to limit output using 'tail',
+            using '--no-pager' just does a full 'cat'"""
+        found_all = True
+        units = []
+        for module in modules:
+            matched = self.match_units(to_list(module))
+            if not matched:
+                logg.error("Unit %s not found.", unit_of(module))
+                self.error |= NOT_FOUND
+                found_all = False
+                continue
+            for unit in matched:
+                if unit not in units:
+                    units += [ unit ]
+        lines = _log_lines
+        follow = _force
+        result = self.log_units(units, lines, follow)
+        if result:
+            self.error = result
+            return False
+        return found_all
+    def log_units(self, units, lines = None, follow = False):
+        result = 0
+        for unit in self.sortedAfter(units):
+            exitcode = self.log_unit(unit, lines, follow)
+            if exitcode < 0:
+                return exitcode
+            if exitcode > result:
+                result = exitcode
+        return result
+    def log_unit(self, unit, lines = None, follow = False):
+        conf = self.load_unit_conf(unit)
+        if not conf: return -1
+        return self.log_unit_from(conf, lines, follow)
+    def log_unit_from(self, conf, lines = None, follow = False):
+        log_path = self.get_journal_log_from(conf)
+        if follow:
+            cmd = [ TAIL_CMD, "-n", str(lines or 10), "-F", log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+        elif lines:
+            cmd = [ TAIL_CMD, "-n", str(lines or 10), log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+        elif _no_pager:
+            cmd = [ CAT_CMD, log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
+        else:
+            cmd = [ LESS_CMD, log_path ]
+            logg.debug("journalctl %s -> %s", conf.name(), cmd)
+            return os.spawnvp(os.P_WAIT, cmd[0], cmd) # type: ignore
     def get_journal_log_from(self, conf):
         return os_path(self._root, self.get_journal_log(conf))
     def get_journal_log(self, conf):
@@ -2348,6 +2754,8 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
+        service_directories = self.create_service_directories(conf)
+        env.update(service_directories)
         if runs in [ "oneshot" ]:
             status_file = self.get_status_file_from(conf)
             if self.get_status_from(conf, "ActiveState", "unknown") == "active":
@@ -2515,6 +2923,8 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-fail done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
+            if _what_kind not in ["none", "keep"]:
+                self.remove_service_directories(conf)
             return False
         else:
             for cmd in conf.getlist("Service", "ExecStartPost", []):
@@ -2640,6 +3050,8 @@ class Systemctl:
                     active = "failed"
                     self.write_status_from(conf, AS=active )
                     return False
+        # service_directories = self.create_service_directories(conf)
+        # env.update(service_directories)
         listening=False
         if not accept:
             sock = self.create_socket(conf)
@@ -3001,6 +3413,8 @@ class Systemctl:
         if not self._quiet:
             okee = self.exec_check_unit(conf, env, "Service", "ExecStop")
             if not okee and _no_reload: return False
+        service_directories = self.env_service_directories(conf)
+        env.update(service_directories)
         returncode = 0
         service_result = "success"
         if runs in [ "oneshot" ]:
@@ -3113,6 +3527,8 @@ class Systemctl:
                 run = subprocess_waitpid(forkpid)
                 logg.debug("post-stop done (%s) <-%s>", 
                     run.returncode or "OK", run.signal or "")
+        if _what_kind not in ["none", "keep"]:
+            self.remove_service_directories(conf)
         return service_result == "success"
     def do_stop_socket_from(self, conf):
         runs = "socket"
@@ -3135,6 +3551,8 @@ class Systemctl:
         else:
             done = self.do_stop_service_from(service_conf)
             service_result = done and "success" or "failed"
+        # service_directories = self.env_service_directories(conf)
+        # env.update(service_directories)
         # POST sequence
         if not self.is_active_from(conf):
             env["SERVICE_RESULT"] = service_result
@@ -3238,6 +3656,8 @@ class Systemctl:
                 else:
                     self.write_status_from(conf, AS="active")
                     return True
+        service_directories = self.env_service_directories(conf)
+        env.update(service_directories)
         if runs in [ "simple", "notify", "forking", "idle" ]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
@@ -4687,22 +5107,20 @@ class Systemctl:
                 except Exception as e:
                     logg.error(" %s: Group does not exist: %s (%s)", unit, group, getattr(e, "__doc__", ""))
                     badgroups += 1
-        dirproblems = 0
+        tmpproblems = 0
         for setting in ("RootDirectory", "RootImage", "BindPaths", "BindReadOnlyPaths",
-            "RuntimeDirectory", "StateDirectory", "CacheDirectory", "LogsDirectory", "ConfigurationDirectory",
-            "RuntimeDirectoryMode", "StateDirectoryMode", "CacheDirectoryMode", "LogsDirectoryMode", "ConfigurationDirectoryMode",
             "ReadWritePaths", "ReadOnlyPaths", "TemporaryFileSystem"):
             setting_value = conf.get(section, setting, "")
             if setting_value:
-                logg.warning("%s: %s directory path not implemented: %s=%s", unit, section, setting, setting_value)
-                dirproblems += 1
+                logg.info("%s: %s private directory remounts ignored: %s=%s", unit, section, setting, setting_value)
+                tmpproblems += 1
         for setting in ("PrivateTmp", "PrivateDevices", "PrivateNetwork", "PrivateUsers", "DynamicUser", 
             "ProtectSystem", "ProjectHome", "ProtectHostname", "PrivateMounts", "MountAPIVFS"):
             setting_yes = conf.getbool(section, setting, "no")
             if setting_yes:
-                logg.warning("%s: %s directory option not supported: %s=yes", unit, section, setting)
-                dirproblems += 1
-        if not abspath and not notexists and not badusers and not badgroups and not dirproblems:
+                logg.info("%s: %s private directory option is ignored: %s=yes", unit, section, setting)
+                tmpproblems += 1
+        if not abspath and not notexists and not badusers and not badgroups:
             return True
         if True:
             filename = strE(conf.filename())
@@ -4717,8 +5135,8 @@ class Systemctl:
             if badusers or badgroups:
                 logg.error(" Oops, %s user names and %s group names were not found. Refusing.", badusers, badgroups)
                 time.sleep(1)
-            if dirproblems:
-                logg.error(" Oops, %s unsupported directory settings. You need to create those before using the service.", dirproblems)
+            if tmpproblems:
+                logg.info("  Note, %s private directory settings are ignored. The application should not depend on it.", tmpproblems)
                 time.sleep(1)
             logg.error(" !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         return False
@@ -5813,6 +6231,8 @@ if __name__ == "__main__":
         help="List units with particular LOAD or SUB or ACTIVE state")
     _o.add_option("-p", "--property", metavar="NAME", dest="unit_property", default=_unit_property,
         help="Show only properties by this name")
+    _o.add_option("--what", metavar="TYPE", dest="what_kind", default=_what_kind,
+        help="Defines the service directories to be cleaned (configuration, state, cache, logs, runtime)")
     _o.add_option("-a", "--all", action="store_true", dest="show_all", default=_show_all,
         help="Show all loaded units/properties, including dead empty ones. To list all units installed on the system, use the 'list-unit-files' command instead")
     _o.add_option("-l","--full", action="store_true", default=_full,
@@ -5854,13 +6274,13 @@ if __name__ == "__main__":
     _o.add_option("--root", metavar="PATH", default=_root,
         help="Enable unit files in the specified root directory (used for alternative root prefix)")
     _o.add_option("-n","--lines", metavar="NUM",
-        help="Number of journal entries to show (ignored)")
+        help="Number of journal entries to show")
     _o.add_option("-o","--output", metavar="CAT",
         help="change journal output mode [short, ..., cat] (ignored)")
     _o.add_option("--plain", action="store_true",
         help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true",
-        help="Do not pipe output into pager (ignored)")
+        help="Do not pipe output into pager (mostly ignored)")
     #
     _o.add_option("-c","--config", metavar="NAME=VAL", action="append", default=[],
         help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
@@ -5881,6 +6301,8 @@ if __name__ == "__main__":
     _extra_vars = opt.extra_vars
     _force = opt.force
     _full = opt.full
+    _log_lines = opt.lines
+    _no_pager = opt.no_pager
     _no_reload = opt.no_reload
     _no_legend = opt.no_legend
     _no_ask_password = opt.no_ask_password
@@ -5892,6 +6314,7 @@ if __name__ == "__main__":
     _unit_state = opt.state
     _unit_type = opt.unit_type
     _unit_property = opt.unit_property
+    _what_kind = opt.what_kind
     # being PID 1 (or 0) in a container will imply --init
     _pid = os.getpid()
     _init = opt.init or _pid in [ 1, 0 ]
