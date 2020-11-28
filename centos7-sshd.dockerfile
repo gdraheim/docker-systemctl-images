@@ -2,7 +2,7 @@ FROM centos:7.7.1908
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
       __version__="1.5.4264"
-ARG PASSWORD=Test.P@ssw0rd
+ARG PASSWORD=P@ssw0rd.21a2dc7b77dacae44b050710903477400ca1c77fa9
 EXPOSE 22
 
 # RUN yum install -y epel-release
