@@ -11,7 +11,8 @@ ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/usr/share/phpmyadmin/config.inc.php"
 ENV INDEX_PHP="/var/www/html/index.php"
 ARG USERNAME=testuser_ok
-ARG PASSWORD=P@ssw0rd.548e779ca48f8c10ed3271298be06742d8ba
+ARG PASSWORD=P@ssw0rd.548e779ca48f8c10ed3271298be06742d8ba598gsdrd
+ARG TESTPASS=P@ssw0rd.UQN2pMWSUbl4gQU.P5hvJuOhjx.s90b4qCnG2idtc30.
 ARG LISTEN=172.0.0.0/8
 ARG VER=4.9.7
 EXPOSE 80
@@ -27,8 +28,8 @@ RUN yum search php
 RUN yum install -y httpd httpd-tools mariadb-server mariadb php php-json php-mysqlnd
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
 RUN systemctl start mariadb -vvv \
-  ; mysqladmin -uroot password 'N0.secret' \
-  ; echo "CREATE USER ${USERNAME} IDENTIFIED BY '${PASSWORD}'" | mysql -uroot -pN0.secret \
+  ; mysqladmin -uroot password ${TESTPASS} \
+  ; echo "CREATE USER ${USERNAME} IDENTIFIED BY '${PASSWORD}'" | mysql -uroot -p${TESTPASS} \
   ; systemctl stop mariadb -vvv 
 
 # phpMyAdmin the hard way
@@ -38,7 +39,7 @@ RUN unzip phpMyAdmin-$VER-all-languages.zip
 RUN mv phpMyAdmin-$VER-all-languages /usr/share/phpmyadmin
 RUN cd /usr/share/phpmyadmin && mv config.sample.inc.php config.inc.php
 RUN systemctl start mariadb -vvv \
-  ; cat /usr/share/phpmyadmin/sql/create_tables.sql | mysql -uroot -pN0.secret \
+  ; cat /usr/share/phpmyadmin/sql/create_tables.sql | mysql -uroot -p${TESTPASS} \
   ; systemctl stop mariadb -vvv 
 RUN mkdir /usr/share/phpmyadmin/tmp \
  ; chown -R apache:apache /usr/share/phpmyadmin \

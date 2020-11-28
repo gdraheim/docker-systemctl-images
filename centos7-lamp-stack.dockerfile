@@ -7,7 +7,8 @@ ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/etc/phpMyAdmin/config.inc.php"
 ENV INDEX_PHP="/var/www/html/index.php"
 ARG USERNAME=testuser_ok
-ARG PASSWORD=P@ssw0rd.1b89e38af6966558c1a1714e15828b9bfea996f91e6fc
+ARG PASSWORD=P@ssw0rd.1b89e38af6966558c1a1714e15828b9bfea996f91e6f
+ARG TESTPASS=P@ssw0rd.rwCh2gAEqgMXBUHwKtDQVD1oP2croTMLgtKr.9fUidQ.
 ARG LISTEN=172.0.0.0/8
 EXPOSE 80
 
@@ -18,8 +19,8 @@ RUN yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
 RUN sed -i "s|ip 127.0.0.1|ip ${LISTEN}|" ${WEB_CONF}
 RUN systemctl start mariadb -vvv \
-  ; mysqladmin -uroot password 'N0.secret' \
-  ; echo "CREATE USER ${USERNAME} IDENTIFIED BY '${PASSWORD}'" | mysql -uroot -pN0.secret \
+  ; mysqladmin -uroot password ${TESTPASS} \
+  ; echo "CREATE USER ${USERNAME} IDENTIFIED BY '${PASSWORD}'" | mysql -uroot -p${TESTPASS} \
   ; systemctl stop mariadb -vvv 
 RUN sed -i -e "/'user'/s|=.*;|='${USERNAME}';|" \
            -e "/'password'/s|=.*;|='${PASSWORD}';|" ${INC_CONF}
