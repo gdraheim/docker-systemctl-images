@@ -5,7 +5,7 @@ FROM centos:8.1.1911
 ###############################################################################
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.4476"
 
 ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/usr/share/phpmyadmin/config.inc.php"
@@ -57,7 +57,6 @@ RUN sed -i -e "/'user'/s|=.*;|='${USERNAME}';|" \
 
 # it does not work without php-fpm (which also requires php-json)
 RUN sed -i "s/^listen.allowed/;listen.allowed/" /etc/php-fpm.d/www.conf
-RUN mkdir /run/php-fpm
 RUN systemctl enable php-fpm
 
 RUN systemctl enable mariadb
