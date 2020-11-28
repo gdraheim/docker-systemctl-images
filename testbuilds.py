@@ -1506,13 +1506,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
-        password = self.newpassword()
         dockerfile="opensuse15-redis-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
+        password = self.newpassword()
         # WHEN
         cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
