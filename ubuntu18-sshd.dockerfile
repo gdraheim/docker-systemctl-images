@@ -1,7 +1,7 @@
 FROM "ubuntu:18.04"
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.4476"
 ARG PASSWORD=P@ssw0rd.9d82fd2c7c83afb7d69213088203b6c6e402da0
 EXPOSE 22
 
@@ -14,13 +14,10 @@ RUN test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl
 RUN apt-cache search sshd
 RUN apt-get install -y openssh-server
 RUN rm -fv /etc/ssh/sshd_not_to_be_run
-RUN systemctl enable sshd
+RUN systemctl enable ssh
 #
 RUN useradd -g nogroup testuser -m
 RUN echo testuser:$PASSWORD | chpasswd
 RUN cat /etc/passwd
 RUN TZ=UTC date -I > /home/testuser/date.txt
-# RuntimeDirectory=sshd
-# RuntimeDirectoryMode=0755
-RUN mkdir /run/sshd
 CMD /usr/bin/systemctl -1
