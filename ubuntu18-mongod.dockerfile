@@ -1,7 +1,7 @@
 FROM "ubuntu:18.04"
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.4476"
 EXPOSE 27017
 
 RUN apt-get update
@@ -19,8 +19,8 @@ COPY files/docker/systemctl3.py /usr/bin/systemctl
 
 RUN sed -i "s|^  bindIp:.*|  bindIp: 0.0.0.0|" /etc/mongod.conf
 RUN sed -i -e "/processManagement/a\\" -e "  pidFilePath: /var/run/mongodb/mongod.pid" /etc/mongod.conf
-RUN mkdir /var/run/mongodb
-RUN chown mongodb:mongodb /var/run/mongodb
+RUN sed -i -e "/PIDFile=/a\\" -e "RuntimeDirectory=mongodb" /lib/systemd/system/mongod.service
+# systemctl3.py can not find the child process being the new MAINPID but mongodb can tell about it
 
 RUN systemctl enable mongod
 
