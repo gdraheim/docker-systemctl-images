@@ -18,8 +18,10 @@ version:
 help:
 	python files/docker/systemctl.py help
 copy cp:
-	cp ../docker-systemctl-replacement/files/docker/systemctl.py files/docker/systemctl.py
-	cp ../docker-systemctl-replacement/files/docker/systemctl3.py files/docker/systemctl3.py
+	cp -v ../docker-systemctl-replacement/files/docker/systemctl.py files/docker/systemctl.py
+	cp -v ../docker-systemctl-replacement/files/docker/systemctl3.py files/docker/systemctl3.py
+	cp -v ../docker-systemctl-replacement/docker_mirror.py .
+	cp -v ../docker-systemctl-replacement/docker_mirror.pyi .
 2: copy
 
 alltests: CH CP UA DJ
