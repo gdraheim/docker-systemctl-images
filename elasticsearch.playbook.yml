@@ -4,19 +4,7 @@
      base_command: "sleep 900"
      docker_repository: "localhost:5000"
      docker_prefix: "systemctl/elasticsearch"
-  roles:
-    - role: docker_distro_version
-      image: "{{ base_image }}"
-    - role: docker_distro_packages_mirror
   tasks:
-    - debug: var=distro_packages_mirror_name
-    - assert:
-        that: 
-          - 'distro_vendor == "centos"'
-          - 'distro_version == "7.7.1908"'
-          - 'distro_packages_mirror_name == "mirror-packages/centos-repo:7.7.1908"'
-          - '"--add-host" in distro_packages_mirror_add_hosts'
-      when: ' base_image == "centos:7.7.1908"'
     - name: name of setup container
       set_fact:
          setup_container: "{{ docker_prefix.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
@@ -24,12 +12,12 @@
     - name: remove setup container
       command: docker rm -f '{{ setup_container }}'
       ignore_errors: yes
+    - name: start docker mirror package repo
+      shell: ./docker_mirror.py start {{base_image}} -a
+      register: mirror
     - name: start setup container
-      command: docker run -d --rm=true {{ distro_packages_mirror_add_hosts }} \
+      command: docker run -d --rm=true {{ mirror.stdout_lines[0] }} \
                      --name "{{ setup_container }}" "{{ base_image }}" {{base_command}}
-    - name: fixup setup container
-      command: docker exec "{{ setup_container }}" zypper install -y python python-xml
-      when: 'distro_os_family == "Suse"'
     - name: attach setup container
       add_host:
         hostname: '{{ setup_container }}'
@@ -46,6 +34,8 @@
       import_role: 
          name: "elasticsearch"
 ###############################################################################
+###### find elasticsearch version and use it to tag the resulting image #######
+###############################################################################
     - name: software package
       set_fact:
         software_package: '{{ elasticsearch_rpm.split("-")[0] }}'
@@ -60,22 +50,16 @@
     - debug: var=image_version
     - name: image name
       set_fact:
-         image_name3: '{{ docker_repository + "/" + docker_prefix + "/" + distro_vendor + "/" + distro_version }}'
-         image_name2: '{{ docker_repository + "/" + docker_prefix + "/" + distro_vendor }}'
+         image_name2: '{{ docker_repository + "/" + docker_prefix + "/" + base_image.replace(":","-") }}'
          image_name1: '{{ docker_repository + "/" + docker_prefix }}'
     - name: commit the container
       command: docker commit \
         -c 'CMD ["/usr/bin/systemctl"]' \
-        '{{ setup_container }}' '{{ image_name3 }}:{{ image_version }}'
-    - name: latest image 3
-      command: docker tag \
-         '{{ image_name3 }}:{{ image_version }}' '{{ image_name3 }}'
-    - name: newest image 2
-      command: docker tag \
-         '{{ image_name3 }}:{{ image_version }}' '{{ image_name2 }}:{{ image_version}}'
+        '{{ setup_container }}' '{{ image_name2 }}:{{ image_version }}'
     - name: latest image 2
       command: docker tag \
          '{{ image_name2 }}:{{ image_version }}' '{{ image_name2 }}'
+#######################################################################
     - name: remove setup container
       command: docker rm -f '{{ setup_container }}'
       ignore_errors: yes
