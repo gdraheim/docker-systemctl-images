@@ -1,9 +1,0 @@
-- include_tasks: "mirror.yml"
-- include_tasks: "extras.yml"
-  when: "distro_packages_mirror_add_hosts|count > 0"
-- name: combine mirror_add_hosts and extras_add_hosts
-  set_fact:
-     distro_packages_mirrors_add_hosts: "{{ distro_packages_mirror_add_hosts }} {{ distro_packages_extras_add_hosts }}"
-  when: "distro_packages_extras_add_hosts is defined"
-- name: final mirrors_add_hosts
-  debug: var=distro_packages_mirrors_add_hosts

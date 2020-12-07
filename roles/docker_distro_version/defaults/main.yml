@@ -1,7 +1,0 @@
-# input:
-image: "centos:7.5.1804"
-# tools:
-docker: 'docker'
-# output
-distro_vendor: ''
-distro_version: ''
