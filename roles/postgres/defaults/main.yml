@@ -1,0 +1,7 @@
+postgres_username: testuser_OK
+postgres_password: P@ssw0rd.bca446713c7498e62850722da36bd680
+postgres_testuser: ""
+postgres_testpass: P@ssw0rd.390baab0b82d21f7a831476df0f632aa
+postgres_listen: "*"
+postgres_allows: "0.0.0.0/0"
+postgres_port: 5432

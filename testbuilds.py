@@ -48,6 +48,7 @@ OPENSUSE = "opensuse/leap:15.0"
 DOCKER = "docker"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
+PLAYBOOK_TOOL = "/usr/bin/ansible-playbook"
 RUNTIME = "/tmp/run-"
 
 _maindir = os.path.dirname(sys.argv[0])
@@ -1273,6 +1274,56 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "postgres.*python.*systemctl"))
         self.assertFalse(greps(out, "root"))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_339_centos7_postgres_playbook(self):
+        """ WHEN using a playbook for systemd-enabled CentOS 7 and python2,
+            THEN we can create an image with an PostgreSql DB service 
+                 being installed and enabled."""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        testname=self.testname()
+        testdir = self.testdir()
+        name="centos7-postgres"
+        playbook="centos7-postgres-docker.yml"
+        savename = docname(playbook)
+        saveto = SAVETO
+        images = saveto + "/postgres"
+        psql = PSQL_TOOL
+        runtime = RUNTIME
+        password = self.newpassword()
+        testpass = "Pass."+password
+        # WHEN
+        users = "-e postgres_testuser=testuser_11 -e postgres_testpass={testpass} -e postgress_password={password}"
+        cmd = "ansible-playbook {playbook} "+users+" -e tagrepo={saveto} -e tagversion={testname} -v"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
+        sh____(cmd.format(**locals()))
+        # THEN
+        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        query = "SELECT rolname FROM pg_roles"
+        cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        cmd = "grep testuser_ok {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #sh____(cmd.format(**locals()))
         # SAVE
         cmd = "docker stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2572,6 +2623,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##### note that the test runs with a non-root 'ansible' user to reflect
         ##### a real deployment scenario using ansible in the non-docker world.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2707,6 +2759,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_867_centos_elasticsearch_image(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2756,6 +2809,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_877_centos_elasticsearch_deploy(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2819,6 +2873,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_887_centos_elasticsearch_docker(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2868,6 +2923,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_897_centos_elasticsearch_docker_playbook(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
