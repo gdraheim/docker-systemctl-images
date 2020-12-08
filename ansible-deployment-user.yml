@@ -1,0 +1,7 @@
+- hosts: "{{ hosts | default('all') }}"
+  vars:
+    enable_ipv6: no
+    deployment_docker: no
+  roles:
+    - deployment-user
+

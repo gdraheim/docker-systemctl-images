@@ -2588,7 +2588,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run -d --name {testname} {image} sleep infinity"
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
-        cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini ansible-sudo.yml -vv" + prepare
+        cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini ansible-deployment-user.yml -vv" + prepare
         sh____(cmd.format(**locals()))
         cmd = "docker exec {testname} grep __version__ /usr/bin/systemctl"
         sh____(cmd.format(**locals()))

@@ -1,0 +1,3 @@
+deployment_user: ansible
+deployment_ipv6: no
+deployment_docker: no
