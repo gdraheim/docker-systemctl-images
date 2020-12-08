@@ -1,4 +1,4 @@
 - hosts: elasticsearch_servers
   roles:
-    - systemctl-replacement
+    - setup-systemctl-replacement
     - elasticsearch

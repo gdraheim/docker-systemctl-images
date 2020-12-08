@@ -1,0 +1,65 @@
+- hosts: localhost
+  vars:
+     base_image: "centos:7.7.1908"
+     base_command: "sleep 900"
+     tagrepo: "localhost:5000/systemctl"
+     tagname: "redis"
+     tagversion: "latest"
+     docker: docker
+  tasks:
+    - name: name of setup container
+      set_fact:
+         container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+    - debug: var=setup_container
+    - name: remove setup container
+      command: "{{docker}} rm -f '{{ container1 }}'"
+      ignore_errors: yes
+    - name: start docker mirror package repo
+      shell: ./docker_mirror.py start {{base_image}} -a
+      register: mirror
+    - name: start setup container
+      command: "{{docker}} run -d --rm=true {{ mirror.stdout_lines[0] }} \
+                     --name '{{ container1 }}' '{{ base_image }}' {{base_command}}"
+    - name: initial setup container
+      add_host:
+        hostname: redis-root
+        ansible_host: "{{ container1 }}"
+        ansible_connection: 'docker'
+        ansible_user: "root"
+        # ansible_python_interpreter: /usr/bin/python
+    - name: setup deployment user
+      delegate_to: redis-root
+      import_role: 
+         name: "setup-deployment-user"
+      vars:
+         deployment_docker: yes
+    - name: attach setup container
+      add_host:
+        hostname: redis-host
+        groups: redis
+        ansible_host: "{{ container1 }}"
+        ansible_connection: 'docker'
+        ansible_user: "ansible"
+        #             ^^^^^^^^^
+        # ansible_python_interpreter: /usr/bin/python
+    - name: gather facts on it
+      delegate_to: redis-host
+      setup:
+        gather_subset: "all"
+    - name: setup systemctl replacement
+      delegate_to: redis-host
+      import_role:
+         name: "setup-systemctl-replacement"
+      vars:
+         assume_docker: yes
+    - name: setup the container
+      delegate_to: redis-host
+      import_role: 
+         name: "elasticsearch"
+    - name: commit the container
+      command: "{{docker}} commit \
+        -c 'CMD [\"/usr/bin/systemctl\"]' \
+        '{{ container1 }}' '{{ tagrepo }}/{{ tagname }}:{{ tagversion }}'"
+    - name: remove setup container
+      command: "{{docker}} rm -f '{{ container1 }}'"
+      ignore_errors: yes
