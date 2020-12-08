@@ -2,9 +2,7 @@
   package: pkg="{{item}}" state="installed"
   become: yes
   with_items: "{{elasticsearch_java_packages}}"
-- name: install systemctl.py
-  copy:
-    src: files/docker/systemctl.py
-    dest: /usr/bin/systemctl
-  become: yes
-  when: "ansible_connection == 'docker'"
+- name: reinstall systemctl.py
+  shell: "test ! -f /usr/bin/systemctl.py || cp -v /usr/bin/systemctl.py /usr/bin/systemctl"
+  register: done
+  changed_when: "' -> ' in done.stdout"
