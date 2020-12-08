@@ -7,36 +7,36 @@
   tasks:
     - name: name of setup container
       set_fact:
-         setup_container: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+         container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
     - debug: var=setup_container
     - name: remove setup container
-      command: docker rm -f '{{ setup_container }}'
+      command: docker rm -f '{{ container1 }}'
       ignore_errors: yes
     - name: start docker mirror package repo
       shell: ./docker_mirror.py start {{base_image}} -a
       register: mirror
     - name: start setup container
       command: docker run -d --rm=true {{ mirror.stdout_lines[0] }} \
-                     --name "{{ setup_container }}" "{{ base_image }}" {{base_command}}
+                     --name "{{ container1 }}" "{{ base_image }}" {{base_command}}
     - name: attach setup container
       add_host:
-        hostname: '{{ setup_container }}'
+        hostname: '{{ container1 }}'
         ansible_connection: 'docker'
         ansible_user: "root"
         # ansible_python_interpreter: /usr/bin/python
     - name: gather facts on it
-      delegate_to: '{{ setup_container }}'
+      delegate_to: '{{ container1 }}'
       setup:
         gather_subset: "all"
 ###############################################################################
     - name: setup systemctl.py
-      delegate_to: '{{ setup_container }}'
+      delegate_to: '{{ container1 }}'
       import_role: 
          name: "systemctl-replacement"
       vars:
          assume_docker: yes
     - name: setup the container
-      delegate_to: '{{ setup_container }}'
+      delegate_to: '{{ container1 }}'
       import_role: 
          name: "elasticsearch"
 ###############################################################################
@@ -46,7 +46,7 @@
       set_fact:
         software_package: '{{ elasticsearch_rpm.split("-")[0] }}'
     - name: software version
-      delegate_to: '{{ setup_container }}'
+      delegate_to: '{{ container1 }}'
       shell: "rpm -q --info {{ software_package }} | sed -e '/Version *:/!d' -e 's/.*: *//' -e q"
       register: software_version_found
     - debug: var=software_version_found
@@ -61,7 +61,7 @@
     - name: commit the container
       command: docker commit \
         -c 'CMD ["/usr/bin/systemctl"]' \
-        '{{ setup_container }}' '{{ image_name2 }}:{{ image_version }}'
+        '{{ container1 }}' '{{ image_name2 }}:{{ image_version }}'
     - name: latest image 2
       command: docker tag \
          '{{ image_name2 }}:{{ image_version }}' '{{ image_name2 }}'
@@ -70,7 +70,7 @@
          '{{ image_name2 }}:{{ image_version }}' '{{ image_name1 }}'
 #######################################################################
     - name: remove setup container
-      command: docker rm -f '{{ setup_container }}'
+      command: docker rm -f '{{ container1 }}'
       ignore_errors: yes
     - name: cleanup images
       shell: 'docker images --filter=dangling=true --format "{{ "{{" }} .ID {{ "}}" }}" | xargs --no-run-if-empty docker rmi'

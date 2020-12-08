@@ -1286,7 +1286,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_347_centos7_redis_dockerfile(self):
-        """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
+        """ WHEN using a dockerfile for systemd-enabled Centos7 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
@@ -1391,7 +1391,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_349_centos9_redis_user_dockerfile(self):
+    def test_349_centos8_redis_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -2569,6 +2569,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
     def test_850_centos_elasticsearch_setup(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
+        ##### note that the test runs with a non-root 'ansible' user to reflect
+        ##### a real deployment scenario using ansible in the non-docker world.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
@@ -2702,7 +2704,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_863_centos_elasticsearch_image(self):
+    def test_867_centos_elasticsearch_image(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         python = _python or _python2
@@ -2770,7 +2772,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker run -d --name {testname} {image} sleep infinity"
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
-        cmd = "ansible-playbook {playbook} -e container={testname} -vv"
+        cmd = "ansible-playbook {playbook} -e container1={testname} -vv"
         sh____(cmd.format(**locals()))
         cmd = "docker commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))

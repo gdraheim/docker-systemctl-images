@@ -7,22 +7,22 @@
   tasks:
     - name: attach container
       add_host:
-        hostname: '{{ container }}'
+        hostname: '{{ container1 }}'
         ansible_connection: 'docker'
         ansible_user: "root"
         # ansible_python_interpreter: /usr/bin/python
     - name: gather facts on it
-      delegate_to: '{{ container }}'
+      delegate_to: '{{ container1 }}'
       setup:
         gather_subset: "all"
     - name: setup systemctl.py
-      delegate_to: '{{ container }}'
+      delegate_to: '{{ container1 }}'
       import_role: 
          name: "systemctl-replacement"
       vars:
          assume_docker: yes
     - name: setup the container
-      delegate_to: '{{ container }}'
+      delegate_to: '{{ container1 }}'
       import_role: 
          name: "elasticsearch"
 # detect version:
@@ -30,11 +30,11 @@
       set_fact:
         software_package: '{{ elasticsearch_rpm.split("-")[0] }}'
     - name: software version
-      delegate_to: '{{ container }}'
+      delegate_to: '{{ container1 }}'
       shell: "rpm -q --info {{ software_package }} | sed -e '/Version *:/!d' -e 's/.*: *//' -e q"
       register: software_version
     - name: write version
-      delegate_to: '{{ container }}'
+      delegate_to: '{{ container1 }}'
       copy: 
         dest: "/VERSION"
         content: "{{ software_version.stdout | trim }}"
