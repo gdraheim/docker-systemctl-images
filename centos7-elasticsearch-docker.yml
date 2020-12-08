@@ -3,14 +3,14 @@
      base_image: "centos:7.7.1908"
      base_command: "sleep 900"
      tagrepo: "localhost:5000/systemctl"
-     tagname: "redis"
+     tagname: "elasticsearch"
      tagversion: "latest"
      docker: docker
   tasks:
     - name: name of setup container
       set_fact:
          container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
-    - debug: var=setup_container
+    - debug: var=container1
     - name: remove setup container
       command: "{{docker}} rm -f '{{ container1 }}'"
       ignore_errors: yes
@@ -36,7 +36,7 @@
     - name: attach setup container
       add_host:
         hostname: elasticsearch-host
-        groups: redis
+        groups: elasticsearch
         ansible_host: "{{ container1 }}"
         ansible_connection: 'docker'
         ansible_user: "ansible"
