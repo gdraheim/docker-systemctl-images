@@ -2751,6 +2751,69 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_877_centos_elasticsearch_setup(self):
+        """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        testname=self.testname()
+        testdir = self.testdir()
+        playbook="centos7-elasticsearch.yml"
+        savename = docname(playbook)
+        basename = CENTOS
+        saveto = SAVETO
+        images = IMAGES
+        image = self.local_image(basename)
+        #
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {image} sleep infinity"
+        sh____(cmd.format(**locals()))
+        prepare = " --limit {testname} -e ansible_user=root"
+        cmd = "ansible-playbook {playbook} -e container={testname} -vv"
+        sh____(cmd.format(**locals()))
+        cmd = "docker commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "docker run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        logg.info("========================>>>>>>>>")
+        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        sh____(cmd.format(**locals()))
+        # THEN
+        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        sh____(cmd.format(**locals()))
+        cmd = "grep 'You Know, for Search' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # STOP
+        cmd = "docker exec {testname} systemctl status elasticsearch"
+        sh____(cmd.format(**locals()))
+        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        sh____(cmd.format(**locals()))
+        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        sh____(cmd.format(**locals()))
+        # CHECK
+        systemctl_log = open(testdir+"/systemctl.log").read()
+        self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
+        self.assertTrue(greps(systemctl_log, "simple started PID"))
+        self.assertTrue(greps(systemctl_log, "stop kill PID"))
+        # SAVE
+        cmd = "docker stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "docker rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
 
 if __name__ == "__main__":
     from optparse import OptionParser

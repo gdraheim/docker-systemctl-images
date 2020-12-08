@@ -1,0 +1,40 @@
+- hosts: localhost
+  vars:
+     base_image: "centos:7.7.1908"
+     base_command: "sleep 900"
+     tagrepo: "localhost:5000/systemctl"
+     tagname: "elasticsearch"
+  tasks:
+    - name: attach container
+      add_host:
+        hostname: '{{ container }}'
+        ansible_connection: 'docker'
+        ansible_user: "root"
+        # ansible_python_interpreter: /usr/bin/python
+    - name: gather facts on it
+      delegate_to: '{{ container }}'
+      setup:
+        gather_subset: "all"
+    - name: setup systemctl.py
+      delegate_to: '{{ container }}'
+      import_role: 
+         name: "systemctl-replacement"
+      vars:
+         assume_docker: yes
+    - name: setup the container
+      delegate_to: '{{ container }}'
+      import_role: 
+         name: "elasticsearch"
+# detect version:
+    - name: software package
+      set_fact:
+        software_package: '{{ elasticsearch_rpm.split("-")[0] }}'
+    - name: software version
+      delegate_to: '{{ container }}'
+      shell: "rpm -q --info {{ software_package }} | sed -e '/Version *:/!d' -e 's/.*: *//' -e q"
+      register: software_version
+    - name: write version
+      delegate_to: '{{ container }}'
+      copy: 
+        dest: "/VERSION"
+        content: "{{ software_version.stdout | trim }}"
