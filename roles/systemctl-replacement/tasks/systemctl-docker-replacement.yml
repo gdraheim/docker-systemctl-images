@@ -1,0 +1,20 @@
+- name: install replacement systemctl.py
+  copy:
+    src: files/docker/systemctl.py
+    dest: /usr/bin/systemctl.py
+    mode: 0755
+  when: "assume_docker or ansible_connection == 'docker'"
+- name: install replacement systemctl.log
+  file:
+    path: /var/log/systemctl.log
+    state: touch
+  when: "assume_docker or ansible_connection == 'docker'"
+- name: ansible check_systemd
+  file:
+    path: /run/systemd/system
+    state: directory
+  when: "assume_docker or ansible_connection == 'docker'"
+- name: reinstall systemctl.py
+  shell: "test ! -f /usr/bin/systemctl.py || cp -v /usr/bin/systemctl.py /usr/bin/systemctl"
+  register: done
+  changed_when: "' -> ' in done.stdout"
