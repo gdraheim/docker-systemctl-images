@@ -2,12 +2,12 @@
   vars:
      base_image: "centos:7.7.1908"
      base_command: "sleep 900"
-     docker_repository: "localhost:5000"
-     docker_prefix: "systemctl/elasticsearch"
+     tagrepo: "localhost:5000/systemctl"
+     tagname: "elasticsearch"
   tasks:
     - name: name of setup container
       set_fact:
-         setup_container: "{{ docker_prefix.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+         setup_container: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
     - debug: var=setup_container
     - name: remove setup container
       command: docker rm -f '{{ setup_container }}'
@@ -29,6 +29,12 @@
       setup:
         gather_subset: "all"
 ###############################################################################
+    - name: setup systemctl.py
+      delegate_to: '{{ setup_container }}'
+      import_role: 
+         name: "systemctl-replacement"
+      vars:
+         assume_docker: yes
     - name: setup the container
       delegate_to: '{{ setup_container }}'
       import_role: 
@@ -50,8 +56,8 @@
     - debug: var=image_version
     - name: image name
       set_fact:
-         image_name2: '{{ docker_repository + "/" + docker_prefix + "/" + base_image.replace(":","-") }}'
-         image_name1: '{{ docker_repository + "/" + docker_prefix }}'
+         image_name2: '{{ tagrepo + "/" + tagname + "/" + base_image.replace(":","-") }}'
+         image_name1: '{{ tagrepo + "/" + tagname }}'
     - name: commit the container
       command: docker commit \
         -c 'CMD ["/usr/bin/systemctl"]' \
@@ -59,6 +65,9 @@
     - name: latest image 2
       command: docker tag \
          '{{ image_name2 }}:{{ image_version }}' '{{ image_name2 }}'
+    - name: latest image 1
+      command: docker tag \
+         '{{ image_name2 }}:{{ image_version }}' '{{ image_name1 }}'
 #######################################################################
     - name: remove setup container
       command: docker rm -f '{{ setup_container }}'
