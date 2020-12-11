@@ -45,6 +45,7 @@ CENTOS = "centos:7.7.1908"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse/leap:15.0"
 
+_curl = "curl"
 _docker = "docker"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
@@ -134,7 +135,8 @@ def download(base_url, filename, into):
     if not os.path.isdir(into):
         os.makedirs(into)
     if not os.path.exists(os.path.join(into, filename)):
-        sh____("cd {into} && wget {base_url}/{filename}".format(**locals()))
+        curl = _curl
+        sh____("cd {into} && {curl} -O {base_url}/{filename}".format(**locals()))
 def text_file(filename, content):
     filedir = os.path.dirname(filename)
     if not os.path.isdir(filedir):
@@ -389,6 +391,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -406,7 +409,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -437,6 +440,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -456,7 +460,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -571,6 +575,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN it succeeds if modified"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -599,7 +604,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}:8080"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -631,6 +636,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN it succeeds if modified"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -659,7 +665,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}:8080"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -695,6 +701,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         self.skipTest("test_216 makes it through a dockerfile")
         testname = self.testname()
         testdir = self.testdir()
@@ -736,7 +743,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -767,6 +774,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         testname = self.testname()
         testdir = self.testdir()
         dockerfile="ubuntu16-apache2.dockerfile"
@@ -783,7 +791,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -814,6 +822,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         testname = self.testname()
         testdir = self.testdir()
         dockerfile="ubuntu18-apache2.dockerfile"
@@ -830,7 +839,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -861,6 +870,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -879,7 +889,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -910,6 +920,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -927,7 +938,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -959,6 +970,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -1015,6 +1027,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -1073,6 +1086,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1129,6 +1143,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1180,6 +1195,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -1247,6 +1263,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -1315,6 +1332,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
+        curl = _curl
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -1364,6 +1382,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1418,6 +1437,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1472,6 +1492,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1531,6 +1552,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1585,6 +1607,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1639,6 +1662,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1699,6 +1723,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1759,6 +1784,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1815,6 +1841,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1871,6 +1898,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1925,6 +1953,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -1950,7 +1979,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         for attempt in xrange(10):
             time.sleep(1)
-            cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -1959,7 +1988,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -1981,6 +2010,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 8 with python3"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:7")
         testname=self.testname()
@@ -2006,7 +2036,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         for attempt in xrange(10):
             time.sleep(1)
-            cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2015,7 +2045,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2037,6 +2067,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -2059,7 +2090,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         for attempt in xrange(10):
             time.sleep(1)
-            cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2068,7 +2099,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2090,6 +2121,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -2113,7 +2145,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         for attempt in xrange(10):
             time.sleep(1)
-            cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2122,7 +2154,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "wget -O {testdir}/result.txt http://{container}/phpMyAdmin"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2144,6 +2176,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Check setup of Mock Vault in CentOS 7 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2171,7 +2204,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "{python} {vault} -address=http://{container}:{port} read secret/mysecret"
         sh____(cmd.format(**locals()))
-        cmd = "wget -O {testdir}/result.txt http://{container}:{port}/v1/secret/mysecret"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:{port}/v1/secret/mysecret"
         sh____(cmd.format(**locals()))
         cmd = "grep '{password}' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2191,6 +2224,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         """ Check setup of Mock Vault in CentOS 7 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2243,6 +2277,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2262,7 +2297,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080/sample"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}:8080/sample"
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2289,6 +2324,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -2308,7 +2344,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080/sample"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}:8080/sample"
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2334,6 +2370,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2353,7 +2390,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; wget -O {testdir}/{testname}.txt http://{container}:8080/sample"
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}:8080/sample/"
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2384,6 +2421,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2405,8 +2443,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2433,6 +2471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2454,8 +2493,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2481,6 +2520,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2502,8 +2542,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        # cmd = "http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2529,6 +2569,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2584,6 +2625,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -2646,6 +2688,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -2707,6 +2750,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -2766,6 +2810,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2804,7 +2849,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2837,6 +2882,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #### it depends on the download of the previous ansible test ####
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
@@ -2871,7 +2917,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 8; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 8; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2904,6 +2950,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2928,7 +2975,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2955,6 +3002,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2987,7 +3035,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -3020,6 +3068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -3044,7 +3093,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -3071,6 +3120,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
+        curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -3095,7 +3145,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
+        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
