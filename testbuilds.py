@@ -2104,6 +2104,99 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "docker rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_607_centos7_simple_vault(self):
+        """ Check setup of Mock Vault in CentOS 7 """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        dockerfile="centos7-vault-http.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        docker = DOCKER
+        vault = "files/vault/vault.py"
+        password = self.newpassword()
+        port = 8200
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        container = self.ip_container(testname)
+        cmd = "{docker} exec {testname} /srv/vault.py write secret/mysecret value={password}"
+        sh____(cmd.format(**locals()))
+        cmd = "{python} {vault} -address=http://{container}:{port} read secret/mysecret"
+        sh____(cmd.format(**locals()))
+        cmd = "wget -O {testdir}/result.txt http://{container}:{port}/v1/secret/mysecret"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '{password}' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
+    def test_617_centos7_sssl_vault(self):
+        """ Check setup of Mock Vault in CentOS 7 """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        python = _python or _python2
+        if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        testname=self.testname()
+        testdir = self.testdir()
+        root = self.root(testdir)
+        dockerfile="centos7-vault-https.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        docker = DOCKER
+        vault = "files/vault/vault.py"
+        password = self.newpassword()
+        port = 8200
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        #
+        time.sleep(1)
+        container = self.ip_container(testname)
+        cmd = "{docker} exec {testname} /srv/vault.py write secret/mysecret value={password}"
+        sh____(cmd.format(**locals()))
+        cmd = "{python} {vault} -tls-skip-verify=yes -address=https://{container}:{port} read secret/mysecret"
+        sh____(cmd.format(**locals()))
+        cmd = "curl -k -o {testdir}/result.txt -- https://{container}:{port}/v1/secret/mysecret"
+        sh____(cmd.format(**locals()))
+        cmd = "grep '{password}' {testdir}/result.txt"
+        sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_662_centos7_tomcat_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
