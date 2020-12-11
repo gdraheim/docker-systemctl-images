@@ -45,7 +45,7 @@ CENTOS = "centos:7.7.1908"
 UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse/leap:15.0"
 
-DOCKER = "docker"
+_docker = "docker"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
 PLAYBOOK_TOOL = "/usr/bin/ansible-playbook"
@@ -259,7 +259,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         import getpass
         getpass.getuser()
     def ip_container(self, name):
-        values = output("docker inspect "+name)
+        docker = _docker
+        cmd = "{docker} inspect {name}"
+        values = output(cmd.format(**locals()))
         values = json.loads(values)
         if not values or "NetworkSettings" not in values[0]:
             logg.critical(" docker inspect %s => %s ", name, values)
@@ -291,13 +293,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             return self.start_mirror(image)
         return ""
     def start_mirror(self, image):
-        docker = DOCKER
+        docker = _docker
         mirror = _mirror
         cmd = "{mirror} start {image} --add-hosts"
         out = output(cmd.format(**locals()))
         return decodes(out).strip()
     def drop_container(self, name):
-        cmd = "docker rm --force {name}"
+        docker = _docker
+        cmd = "{docker} rm --force {name}"
         sx____(cmd.format(**locals()))
     def drop_centos(self):
         self.drop_container("centos")
@@ -313,11 +316,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.make_container("centos", CENTOS)
     def make_container(self, name, image):
         self.drop_container(name)
+        docker = _docker
         local_image = self.local_image(image)
-        cmd = "docker run --detach --name {name} {local_image} sleep 1000"
+        cmd = "{docker} run --detach --name {name} {local_image} sleep 1000"
         sh____(cmd.format(**locals()))
         print("                 # " + local_image)
-        print("  docker exec -it "+name+" bash")
+        print("  {docker} exec -it {name} bash".format(**locals()))
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
@@ -384,6 +388,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -393,11 +398,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -405,18 +410,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_202_centos8_httpd_dockerfile(self):
@@ -431,6 +436,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -442,11 +448,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -454,18 +460,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_205_centos7_httpd_not_user_dockerfile(self):
@@ -476,6 +482,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode
             THEN it fails."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-httpd"
@@ -485,29 +492,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        cmd = "{docker} run -d --name {testname} {images}:{testname} sleep 300"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
-        cmd = "docker exec {testname} systemctl start httpd --user"
+        cmd = "{docker} exec {testname} systemctl start httpd --user"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit httpd.service not for --user mode"))
-        cmd = "docker exec {testname} /usr/sbin/httpd -DFOREGROUND"
+        cmd = "{docker} exec {testname} /usr/sbin/httpd -DFOREGROUND"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "could not bind to address 0.0.0.0:80"))
         self.assertTrue(greps(err, "Unable to open logs"))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_206_centos8_httpd_not_user_dockerfile(self):
@@ -518,6 +525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode
             THEN it fails."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -529,29 +537,29 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        cmd = "{docker} run -d --name {testname} {images}:{testname} sleep 300"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
-        cmd = "docker exec {testname} systemctl start httpd --user"
+        cmd = "{docker} exec {testname} systemctl start httpd --user"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "Unit httpd.service not for --user mode"))
-        cmd = "docker exec {testname} /usr/sbin/httpd -DFOREGROUND"
+        cmd = "{docker} exec {testname} /usr/sbin/httpd -DFOREGROUND"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 1)
         self.assertTrue(greps(err, "could not bind to address 0.0.0.0:80"))
         self.assertTrue(greps(err, "Unable to open logs"))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_207_centos7_httpd_user_dockerfile(self):
@@ -562,6 +570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode.
             THEN it succeeds if modified"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -573,20 +582,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        cmd = "{docker} run -d --name {testname} {images}:{testname} sleep 300"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start httpd --user"
+        cmd = "{docker} exec {testname} systemctl start httpd --user"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
-        cmd = "docker rm -f {testname}"
+        cmd = "{docker} rm -f {testname}"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -594,23 +603,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "apache.*python.*systemctl"))
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_208_centos8_httpd_user_dockerfile(self):
@@ -621,6 +630,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode.
             THEN it succeeds if modified"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -632,20 +642,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname} sleep 300"
+        cmd = "{docker} run -d --name {testname} {images}:{testname} sleep 300"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start httpd --user"
+        cmd = "{docker} exec {testname} systemctl start httpd --user"
         out, err, end = output3(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s\n%s", cmd, end, out, err)
         self.assertEqual(end, 0)
-        cmd = "docker rm -f {testname}"
+        cmd = "{docker} rm -f {testname}"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -653,23 +663,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "apache.*python.*systemctl"))
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_214_ubuntu_apache2(self):
@@ -684,6 +694,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         self.skipTest("test_216 makes it through a dockerfile")
         testname = self.testname()
         testdir = self.testdir()
@@ -696,32 +707,32 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, basename)
         #
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run --detach --name={testname} {image} sleep 200"
+        cmd = "{docker} run --detach --name={testname} {image} sleep 200"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get update"
+        cmd = "{docker} exec {testname} apt-get update"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} apt-get install -y apache2 {python_base}"
+        cmd = "{docker} exec {testname} apt-get install -y apache2 {python_base}"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {systemctl_py} {testname}:/usr/bin/systemctl"
+        cmd = "{docker} cp {systemctl_py} {testname}:/usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl'"
+        cmd = "{docker} exec {testname} bash -c 'test -L /bin/systemctl || ln -sf /usr/bin/systemctl /bin/systemctl'"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl enable apache2"
+        cmd = "{docker} exec {testname} systemctl enable apache2"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
+        cmd = "{docker} exec {testname} bash -c 'echo TEST_OK > /var/www/html/index.html'"
         sh____(cmd.format(**locals()))
         # .........................................
-        cmd = "docker commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
+        cmd = "{docker} commit -c 'CMD [\"/usr/bin/systemctl\"]'  {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -729,18 +740,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_216_ubuntu16_apache2(self):
@@ -755,6 +766,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         testname = self.testname()
         testdir = self.testdir()
         dockerfile="ubuntu16-apache2.dockerfile"
@@ -763,11 +775,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -775,18 +787,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_218_ubuntu18_apache2(self):
@@ -801,6 +813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         testname = self.testname()
         testdir = self.testdir()
         dockerfile="ubuntu18-apache2.dockerfile"
@@ -809,11 +822,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -821,18 +834,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_225_opensuse15_apache2_dockerfile(self):
@@ -847,6 +860,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -857,11 +871,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -869,18 +883,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_235_opensuse15_nginx_dockerfile(self):
@@ -895,6 +909,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             because the test script has placed an index.html
             in the webserver containing that text. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -904,11 +919,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         saveto = SAVETO
         images = IMAGES
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -916,18 +931,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_307_centos7_postgres_dockerfile(self):
@@ -943,6 +958,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -955,11 +971,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -971,18 +987,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_308_centos8_postgres_dockerfile(self):
@@ -998,6 +1014,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -1012,11 +1029,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1028,18 +1045,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_315_opensuse15_postgres_dockerfile(self):
@@ -1055,6 +1072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1067,11 +1085,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Pass."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1083,18 +1101,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_318_ubuntu18_postgres_dockerfile(self):
@@ -1110,6 +1128,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             in the in the database with a known password. """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1122,11 +1141,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1138,18 +1157,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_337_centos7_postgres_user_dockerfile(self):
@@ -1160,6 +1179,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -1173,11 +1193,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Pass."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1189,33 +1209,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         uid="postgres"
-        cmd = "docker exec {testname} id -u {uid}"
+        cmd = "{docker} exec {testname} id -u {uid}"
         out = output(cmd.format(**locals()))
         if out: uid = decodes(out).strip()
-        cmd = "docker exec {testname} ls {runtime}{uid}/run"
+        cmd = "{docker} exec {testname} ls {runtime}{uid}/run"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
+        cmd = "{docker} exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:{runtime}{uid}/run/postgresql.service.status {testdir}/postgresql.service.status"
+        cmd = "{docker} cp {testname}:{runtime}{uid}/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "postgres.*python.*systemctl"))
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_338_centos8_postgres_user_dockerfile(self):
@@ -1226,6 +1246,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                there from PID-1 started implicity in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -1241,11 +1262,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         testpass = "Test."+password
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1257,33 +1278,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         uid="postgres"
-        cmd = "docker exec {testname} id -u {uid}"
+        cmd = "{docker} exec {testname} id -u {uid}"
         out = output(cmd.format(**locals()))
         if out: uid = decodes(out).strip()
-        cmd = "docker exec {testname} ls {runtime}{uid}/run"
+        cmd = "{docker} exec {testname} ls {runtime}{uid}/run"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
+        cmd = "{docker} exec {testname} bash -c 'for i in 1 2 3 4 5 ; do wc -l {runtime}{uid}/run/postgresql.service.status && break; sleep 2; done'"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:{runtime}{uid}/run/postgresql.service.status {testdir}/postgresql.service.status"
+        cmd = "{docker} cp {testname}:{runtime}{uid}/run/postgresql.service.status {testdir}/postgresql.service.status"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "postgres.*python.*systemctl"))
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_339_centos7_postgres_playbook(self):
@@ -1293,6 +1314,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         name="centos7-postgres"
@@ -1308,9 +1330,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         users = "-e postgres_testuser=testuser_11 -e postgres_testpass={testpass} -e postgress_password={password}"
         cmd = "ansible-playbook {playbook} "+users+" -e tagrepo={saveto} -e tagversion={testname} -v"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
@@ -1322,18 +1344,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_347_centos7_redis_dockerfile(self):
@@ -1341,6 +1363,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1351,42 +1374,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_348_centos8_redis_dockerfile(self):
@@ -1394,6 +1417,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1404,42 +1428,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_349_centos8_redis_user_dockerfile(self):
@@ -1447,6 +1471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1457,47 +1482,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # 
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_355_opensuse15_redis_dockerfile(self):
@@ -1505,6 +1530,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1515,42 +1541,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_358_ubuntu18_redis_dockerfile(self):
@@ -1558,6 +1584,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1568,42 +1595,42 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_359_ubuntu18_redis_user_dockerfile(self):
@@ -1611,6 +1638,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1621,47 +1649,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # 
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_365_opensuse15_redis_user_dockerfile(self):
@@ -1670,6 +1698,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             AND that AUTH works along with a USER process"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1681,47 +1710,47 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client redis-cli -h {container} -a {password} ping | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # USER
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_382_centos8_mongod_dockerfile(self):
@@ -1729,6 +1758,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             check that mongo can reply witha  hostInfo."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1739,44 +1769,44 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client mongo --help"
+        cmd = "{docker} exec -t {testname}-client mongo --help"
         sh____(cmd.format(**locals()))
         # cmd = "mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_385_opensuse15_mongod_dockerfile(self):
@@ -1784,6 +1814,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             check that mongo can reply witha  hostInfo."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1794,44 +1825,44 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client mongo --help"
+        cmd = "{docker} exec -t {testname}-client mongo --help"
         sh____(cmd.format(**locals()))
         # cmd = "mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_388_ubuntu18_mongod_dockerfile(self):
@@ -1839,6 +1870,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             check that mongo can reply with a hostInfo."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -1849,49 +1881,50 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sx____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname}-client {images}:{testname} sleep 3"
+        cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client mongo --help"
+        cmd = "{docker} exec -t {testname}-client mongo --help"
         sh____(cmd.format(**locals()))
         # cmd = "mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         # sh____(cmd.format(**locals()))
-        cmd = "docker exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
+        cmd = "{docker} exec -t {testname}-client mongo --host {container} --eval 'db.hostInfo()' | tee {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}-client"
+        cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}-client"
+        cmd = "{docker} rm --force {testname}-client"
         sh____(cmd.format(**locals()))
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_531_centos7_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -1906,11 +1939,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
@@ -1930,23 +1963,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_532_centos8_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 8 with python3"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:7")
         testname=self.testname()
@@ -1961,11 +1995,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
@@ -1985,23 +2019,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_540_opensuse14_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -2013,11 +2048,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
@@ -2037,23 +2072,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_541_opensuse15_lamp_stack_php7(self):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         testname=self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
@@ -2066,11 +2102,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
@@ -2090,23 +2126,24 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_607_centos7_simple_vault(self):
         """ Check setup of Mock Vault in CentOS 7 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2153,6 +2190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_617_centos7_sssl_vault(self):
         """ Check setup of Mock Vault in CentOS 7 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2204,6 +2242,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2215,11 +2254,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2227,18 +2266,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     @unittest.expectedFailure
@@ -2249,6 +2288,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -2260,11 +2300,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2272,18 +2312,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_665_centos7_tomcat_user_dockerfile(self):
@@ -2293,6 +2333,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             In this case the container is run in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2304,11 +2345,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
@@ -2316,23 +2357,23 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} ps axu"
+        cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertTrue(greps(out, "tomcat.*python.*systemctl"))
         self.assertFalse(greps(out, "root"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_672_centos7_cntlm_dockerfile(self):
@@ -2342,6 +2383,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2353,33 +2395,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; docker exec {testname} ps axu"
+        cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         # cmd = "sleep 5; http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     @unittest.expectedFailure
@@ -2390,6 +2432,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2401,33 +2444,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; docker exec {testname} ps axu"
+        cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         # cmd = "sleep 5; http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_675_centos7_cntlm_user_dockerfile(self):
@@ -2437,6 +2480,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             In this case the container is run in --user mode."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2448,33 +2492,33 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; docker exec {testname} ps axu"
+        cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         cmd = "http_proxy={container}:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         # cmd = "http_proxy=127.0.0.1:3128 wget -O {testdir}/{testname}.txt http://www.google.com --timeout=4"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_677_centos7_ssh_dockerfile(self):
@@ -2484,6 +2528,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2496,15 +2541,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2515,18 +2560,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
@@ -2538,6 +2583,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
         testname=self.testname()
@@ -2550,21 +2596,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl is-system-running"
+        cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl is-system-running"
+        cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2576,18 +2622,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
@@ -2599,6 +2645,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -2610,21 +2657,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl is-system-running"
+        cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl is-system-running"
+        cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2636,18 +2683,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
@@ -2659,6 +2706,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             Addtionally we do check an example application"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
+        docker = _docker
         python = _python or _python3
         testname=self.testname()
         testdir = self.testdir()
@@ -2670,21 +2718,21 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         password = self.newpassword()
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl is-system-running"
+        cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        cmd = "sleep 2; docker exec {testname} ps axu"
+        cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl is-system-running"
+        cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2696,18 +2744,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
-        #cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
@@ -2717,6 +2765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         ##### a real deployment scenario using ansible in the non-docker world.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2728,31 +2777,31 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         image = self.local_image(basename)
         #
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {image} sleep infinity"
+        cmd = "{docker} run -d --name {testname} {image} sleep infinity"
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
         cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini ansible-deployment-user.yml -vv" + prepare
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} grep __version__ /usr/bin/systemctl"
+        cmd = "{docker} exec {testname} grep __version__ /usr/bin/systemctl"
         sh____(cmd.format(**locals()))
         cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini centos7-elasticsearch-setup.yml -vv"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} grep __version__ /usr/bin/systemctl"
+        cmd = "{docker} exec {testname} grep __version__ /usr/bin/systemctl"
         sh____(cmd.format(**locals()))
-        cmd = "docker commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
+        cmd = "{docker} commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
         cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
@@ -2760,11 +2809,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
+        cmd = "{docker} exec {testname} systemctl status elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
@@ -2772,21 +2821,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_855_centos7_elasticsearch_dockerfile(self):
         """ Check setup of ElasticSearch on CentOs via Dockerfile"""
         #### it depends on the download of the previous ansible test ####
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
@@ -2807,18 +2857,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         psql = PSQL_TOOL
         # WHEN
-        cmd = "docker build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
         cmd = "sleep 8; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
@@ -2826,33 +2876,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
+        cmd = "{docker} exec {testname} systemctl status elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
         # CHECK
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         systemctl_log = open(testdir+"/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_867_centos_elasticsearch_image(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2865,16 +2916,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "ansible-playbook {playbook} -e base_image='{basename}' -e tagrepo={tagrepo} -vv"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {tagrepo}/{tagname}:latest"
+        cmd = "{docker} run -d --name {testname} {tagrepo}/{tagname}:latest"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
         cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
@@ -2882,11 +2933,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
+        cmd = "{docker} exec {testname} systemctl status elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
@@ -2894,15 +2945,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
     def test_877_centos_elasticsearch_deploy(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2914,25 +2966,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         images = IMAGES
         image = self.local_image(basename)
         #
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {image} sleep infinity"
+        cmd = "{docker} run -d --name {testname} {image} sleep infinity"
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
         cmd = "ansible-playbook {playbook} -e container1={testname} -vv"
         sh____(cmd.format(**locals()))
-        cmd = "docker commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
+        cmd = "{docker} commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
         cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
@@ -2940,11 +2992,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
+        cmd = "{docker} exec {testname} systemctl status elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
@@ -2952,21 +3004,22 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {saveto}/{savename}:latest"
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
         sx____(cmd.format(**locals()))
-        cmd = "docker tag {images}:{testname} {saveto}/{savename}:latest"
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
         sh____(cmd.format(**locals()))
-        cmd = "docker rmi {images}:{testname}"
+        cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     def test_887_centos_elasticsearch_docker(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2979,16 +3032,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "ansible-playbook {playbook} -e base_image='{basename}' -e tagrepo={tagrepo} -e tagversion={testname} -vv"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {tagrepo}/{tagname}:{testname}"
+        cmd = "{docker} run -d --name {testname} {tagrepo}/{tagname}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
         cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
@@ -2996,11 +3049,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
+        cmd = "{docker} exec {testname} systemctl status elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
@@ -3008,15 +3061,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
     def test_897_centos_elasticsearch_docker_playbook(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
+        docker = _docker
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -3029,16 +3083,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "ansible-playbook {playbook} -e base_image='{basename}' -e tagrepo={tagrepo} -e tagversion={testname} -vv"
         sh____(cmd.format(**locals()))
         #
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "docker run -d --name {testname} {tagrepo}/{tagname}:{testname}"
+        cmd = "{docker} run -d --name {testname} {tagrepo}/{tagname}:{testname}"
         sh____(cmd.format(**locals()))
         #
         container = self.ip_container(testname)
         logg.info("========================>>>>>>>>")
-        cmd = "docker exec {testname} touch /var/log/systemctl.log"
+        cmd = "{docker} exec {testname} touch /var/log/systemctl.log"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl start elasticsearch -vvv"
+        cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
         cmd = "sleep 9; wget -O {testdir}/result.txt http://{container}:9200/?pretty"
@@ -3046,11 +3100,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         # STOP
-        cmd = "docker exec {testname} systemctl status elasticsearch"
+        cmd = "{docker} exec {testname} systemctl status elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker exec {testname} systemctl stop elasticsearch"
+        cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
-        cmd = "docker cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
         systemctl_log = open(testdir+"/systemctl.log").read()
@@ -3058,9 +3112,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
         # SAVE
-        cmd = "docker stop {testname}"
+        cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
-        cmd = "docker rm --force {testname}"
+        cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
 
@@ -3080,6 +3134,8 @@ if __name__ == "__main__":
        help="override the python execution engine [%default]")
     _o.add_option("-m","--mirror", metavar="EXE", default=_mirror,
        help="override the docker_mirror.py [%default]")
+    _o.add_option("-D","--docker", metavar="EXE", default=_docker,
+       help="override docker exe or podman [%default]")
     _o.add_option("-l","--logfile", metavar="FILE", default="",
        help="additionally save the output log to a file [%default]")
     _o.add_option("-P","--password", metavar="PASSWORD", default="",
@@ -3093,7 +3149,8 @@ if __name__ == "__main__":
     _python = opt.python
     _python2 = opt.python2
     _python3 = opt.python3
-    _dockermirror = opt.mirror
+    _mirror = opt.mirror
+    _docker = opt.docker
     _password = opt.password
     #
     logfile = None
