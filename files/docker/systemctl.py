@@ -4,11 +4,12 @@
 from __future__ import print_function
 
 __copyright__ = "(C) 2016-2020 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.4476"
+__version__ = "1.5.4505"
 
 import logging
 logg = logging.getLogger("systemctl")
 
+from types import GeneratorType
 import re
 import fnmatch
 import shlex
@@ -2648,35 +2649,46 @@ class Systemctl:
             if timeout > 2:
                 logg.debug("socket.timeout %s", e)
         return result
-    def wait_notify_socket(self, notify, timeout, pid = None):
+    def wait_notify_socket(self, notify, timeout, pid = None, pid_file = None):
         if not os.path.exists(notify.socketfile):
             logg.info("no $NOTIFY_SOCKET exists")
             return {}
         #
-        logg.info("wait $NOTIFY_SOCKET, timeout %s", timeout)
+        mainpidTimeout = int(timeout / 10) # Apache sends READY before MAINPID
+        logg.info("wait $NOTIFY_SOCKET, timeout %s (mainpid %s)", timeout, mainpidTimeout)
+        waiting = " ---"
         results = {}
-        seenREADY = None
         for attempt in xrange(int(timeout)+1):
             if pid and not self.is_active_pid(pid):
-                logg.info("dead PID %s", pid)
+                logg.info("seen dead PID %s", pid)
                 return results
             if not attempt: # first one
                 time.sleep(1) # until TimeoutStartSec
                 continue
             result = self.read_notify_socket(notify, 1) # sleep max 1 second
-            if not result: # timeout
-                time.sleep(1) # until TimeoutStartSec
-                continue
-            for name, value in self.read_env_part(result):
+            for line in result.splitlines():
+                # for name, value in self.read_env_part(line)
+                if "=" not in line:
+                    continue
+                name, value = line.split("=", 1)
                 results[name] = value
-                if name == "READY":
-                    seenREADY = value
-                if name in ["STATUS", "ACTIVESTATE"]:
-                    logg.debug("%s: %s", name, value) # TODO: update STATUS -> SubState
-            if seenREADY:
-                break
-        if not seenREADY:
+                if name in ["STATUS", "ACTIVESTATE", "MAINPID", "READY"]:
+                    hint="seen notify %s     " % (waiting)
+                    logg.debug("%s :%s=%s", hint, name, value)
+            if "READY" not in results:
+                time.sleep(1) # until TimeoutStart
+                continue
+            if "MAINPID" not in results and not pid_file:
+                mainpidTimeout -= 1
+                if mainpidTimeout > 0:
+                    waiting = "%4i" % (-mainpidTimeout)
+                    time.sleep(1) # until TimeoutStart
+                    continue
+            break # READY and MAINPID
+        if "READY" not in results:
             logg.info(".... timeout while waiting for 'READY=1' status on $NOTIFY_SOCKET")
+        elif "MAINPID" not in results:
+            logg.info(".... seen 'READY=1' but no MAINPID update status on $NOTIFY_SOCKET")
         logg.debug("notify = %s", results)
         try:
             notify.socket.close()
@@ -2850,6 +2862,7 @@ class Systemctl:
         elif runs in [ "notify" ]:
             # "notify" is the same as "simple" but we create a $NOTIFY_SOCKET 
             # and wait for startup completion by checking the socket messages
+            pid_file = self.pid_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
                 logg.error("the service is already running on PID %s", pid)
@@ -2893,7 +2906,7 @@ class Systemctl:
                         break
             if service_result in [ "success" ] and mainpid:
                 logg.debug("okay, wating on socket for %ss", timeout)
-                results = self.wait_notify_socket(notify, timeout, mainpid)
+                results = self.wait_notify_socket(notify, timeout, mainpid, pid_file)
                 if "MAINPID" in results:
                     new_pid = to_intN(results["MAINPID"])
                     if new_pid and new_pid != mainpid:
@@ -6216,7 +6229,7 @@ def print_result(result):
         else:
             logg_info("EXEC END '%s...'", result1)
             logg_debug("    END '%s'", result)
-    elif isinstance(result, list) or hasattr(result, "next") or hasattr(result, "__next__"):
+    elif isinstance(result, list) or isinstance(result, GeneratorType):
         shown = 0
         for element in result:
             if isinstance(element, tuple):
@@ -6226,7 +6239,7 @@ def print_result(result):
             shown += 1
         logg_info("EXEC END %s items", shown)
         logg_debug("    END %s", result)
-    elif hasattr(result, "keys"):
+    elif isinstance(result, dict):
         shown = 0
         for key in sorted(result.keys()):
             element = result[key]
