@@ -1988,7 +1988,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
+            text = open("{testdir}/result.txt".format(**locals())).read()
+            if "503 Service Unavailable" in text:
+                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                continue
             logg.info(" %s =>%s\n%s", cmd, end, out)
+            logg.info(" %s ->\n%s", cmd, text)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
@@ -2019,7 +2024,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         name="centos8-lamp-stack"
         dockerfile="centos8-lamp-stack.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
+        addhosts = self.local_addhosts(dockerfile, "--epel")
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
@@ -2035,9 +2040,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         #
         container = self.ip_container(testname)
         # THEN
-        for attempt in xrange(10):
+        logg.info("THEN")
+        for attempt in xrange(50):
             time.sleep(1)
-            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2045,8 +2051,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
+            text = open("{testdir}/result.txt".format(**locals())).read()
+            if "503 Service Unavailable" in text:
+                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                continue
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
+            logg.info(" %s ->\n%s", cmd, text)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
