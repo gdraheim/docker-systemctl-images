@@ -22,10 +22,16 @@ RUN sed -i -e "s|/usr/bin/python3|/usr/libexec/platform-python|" /usr/bin/system
 RUN yum install -y dnf-plugins-core
 RUN yum config-manager --set-enabled PowerTools
 RUN yum install -y epel-release
+RUN echo 'sslverify=false' >> /etc/yum.conf
 RUN yum repolist
 
 RUN yum search php
 RUN yum install -y httpd httpd-tools mariadb-server mariadb php php-json php-mysqlnd
+RUN mkdir /etc/systemd/system/mariadb.service.d ; \
+   { echo '[Service]' \
+   ; echo 'PIDFile=/run/mariadb/mariadb.pid' \
+   ; } > /etc/systemd/system/mariadb.service.d/pidfile.conf
+
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
 RUN systemctl start mariadb -vvv \
   ; mysqladmin -uroot password ${TESTPASS} \
