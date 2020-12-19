@@ -1992,6 +1992,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "503 Service Unavailable" in text:
                 logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
                 continue
+            if "<h1>" in text:
+                break
             logg.info(" %s =>%s\n%s", cmd, end, out)
             logg.info(" %s ->\n%s", cmd, text)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
@@ -2041,7 +2043,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         container = self.ip_container(testname)
         # THEN
         logg.info("THEN")
-        for attempt in xrange(50):
+        for attempt in xrange(20):
             time.sleep(1)
             cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
             out, err, end = output3(cmd.format(**locals()))
@@ -2055,6 +2057,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "503 Service Unavailable" in text:
                 logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
                 continue
+            if "<h1>" in text:
+                break
             logg.info(" %s =>%s\n%s", cmd, end, out)
             logg.info(" %s ->\n%s", cmd, text)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
