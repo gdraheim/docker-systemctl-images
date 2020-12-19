@@ -1,12 +1,17 @@
 - hosts: localhost
   vars:
-     base_image: "centos:7.7.1908"
+     base_image: "centos:7.9.2009"
      base_command: "sleep 900"
      tagrepo: "localhost:5000/systemctl"
      tagname: "elasticsearch"
      tagversion: "latest"
      docker: docker
   tasks:
+    - name: downloads upfront
+      import_role:
+         name: "elasticsearch"
+         tasks_from: "software_download.yml"
+         allow_duplicates: yes
     - name: name of setup container
       set_fact:
          container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
