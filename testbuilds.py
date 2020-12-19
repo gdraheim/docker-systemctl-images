@@ -279,7 +279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if add_hosts:
             return "{add_hosts} {image}".format(**locals())
         return image
-    def local_addhosts(self, dockerfile):
+    def local_addhosts(self, dockerfile, extras = None):
         image = ""
         for line in open(dockerfile):
             m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
@@ -292,12 +292,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 break
         logg.debug("--\n-- '%s' FROM '%s'", dockerfile, image)
         if image:
-            return self.start_mirror(image)
+            return self.start_mirror(image, extras)
         return ""
-    def start_mirror(self, image):
+    def start_mirror(self, image, extras):
+        extras = extras or ""
         docker = _docker
         mirror = _mirror
-        cmd = "{mirror} start {image} --add-hosts"
+        cmd = "{mirror} start {image} --add-hosts {extras}"
         out = output(cmd.format(**locals()))
         return decodes(out).strip()
     def drop_container(self, name):
@@ -1961,7 +1962,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         root = self.root(testdir)
         name="centos7-lamp-stack"
         dockerfile="centos7-lamp-stack.dockerfile"
-        addhosts = self.local_addhosts(dockerfile)
+        addhosts = self.local_addhosts(dockerfile, "--epel")
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
@@ -2187,7 +2188,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
-        docker = DOCKER
+        docker = _docker
         vault = "files/vault/vault.py"
         password = self.newpassword()
         port = 8200
@@ -2235,7 +2236,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
-        docker = DOCKER
+        docker = _docker
         vault = "files/vault/vault.py"
         password = self.newpassword()
         port = 8200
