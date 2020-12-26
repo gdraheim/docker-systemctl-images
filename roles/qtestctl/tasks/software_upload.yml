@@ -1,0 +1,20 @@
+# Copyright (C) 2020 Guido U. Draheim, All Rights Reserved
+
+- name: qtestctl_tgz
+  set_fact:
+     qtestctl_tgz: "{{ qtestctl_download | basename }}"
+  when: not qtestctl_tgz
+- name: upload check
+  local_action: 'stat path="{{qtestctl_software}}/{{qtestctl_tgz}}"'
+  register: have_download
+- name: inst dir
+  file: 
+    path: "{{qtestctl_software}}" 
+    state: "directory" 
+    owner: "{{ansible_user}}"
+  become: yes
+- name: upload tgz
+  copy: 
+    src: "{{qtestctl_software}}/{{qtestctl_tgz}}" 
+    dest: "{{qtestctl_software}}"
+  when: have_download.stat.exists

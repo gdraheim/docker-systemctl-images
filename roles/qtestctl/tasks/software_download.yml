@@ -1,0 +1,21 @@
+# Copyright (C) 2020 Guido U. Draheim, All Rights Reserved
+
+- name: qtestctl_tgz
+  set_fact:
+    qtestctl_tgz: "{{ qtestctl_download | basename }}"
+- name: qtestctl_download
+  set_fact:
+    qtestctl_url: "{{ qtestctl_download.replace('/' + qtestctl_tgz, '') }}"
+- name: download check
+  stat: path="{{qtestctl_software}}/{{qtestctl_tgz}}"
+  register: need_download
+- name: "mkdir for software"
+  file:
+    path: "{{qtestctl_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download the software
+  get_url:
+    dest: "{{qtestctl_software}}"
+    url: "{{qtestctl_url}}/{{qtestctl_tgz}}"
+  when: not need_download.stat.exists

@@ -1,0 +1,13 @@
+# qtestctl_url: "https://pforgeipt.intra.airbusds.corp/nexus3/repository/pforge-assets-bin/qasymphony/6.4.1"
+# qtestctl_tgz: "qtestctl-6.4.1-linux-x64-full.tgz"
+
+qtestctl_download65: "https://qtest-storage.s3.amazonaws.com/qtestctl/6.5/qtestctl-6.5-linux-x64-full.tgz"
+qtestctl_download66: "https://qtest-storage.s3.amazonaws.com/qtestctl/6.6/qtestctl-6.6-linux-x64-full-Ni42Cg=.tgz"
+qtestctl_download67: "https://qtest-storage.s3.amazonaws.com/qtestctl/6.7/qtestctl-6.7-linux-x64-full-Ni43Cg=.tgz"
+qtestctl_download68: "https://qtest-storage.s3.amazonaws.com/qtestctl/6.8/qtestctl-6.8-linux-x64-full-66aa5ab.tgz"
+qtestctl_download: "{{qtestctl_download67}}"
+qtestctl_url: ""
+qtestctl_tgz: ""
+
+qtestctl_software: "Software/qTest"
+qtestctl_home: /data/qtest/home

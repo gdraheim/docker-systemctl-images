@@ -1,0 +1,14 @@
+# Copyright (C) 2020 Guido U. Draheim, All Rights Reserved
+
+- name: qtest home
+  file:
+    state: directory
+    path: "{{ qtestctl_home }}"
+  become: yes
+- name: unpack software
+  shell: |
+    set -ex
+    here=`pwd`
+    cd "{{ qtestctl_home }}"
+    tar xzvf $here/{{qtestctl_software}}/{{qtestctl_tgz}} --strip-components=1
+  become: yes

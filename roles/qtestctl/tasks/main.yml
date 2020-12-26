@@ -1,0 +1,8 @@
+- include: software_upload.yml
+- include: software_download.yml
+  when: LOCAL is undefined
+- include: install_fonts.yml
+- include: install_software.yml
+- include: cleanrepo.yml
+- include: software_cleanup.yml
+- include: debug_tools.yml

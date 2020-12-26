@@ -1,0 +1,16 @@
+- name: mc
+  package:
+    name: "mc"
+  become: yes
+- name: net-tools
+  package:
+    name: "net-tools"
+  become: yes
+- name: less
+  package:
+    name: "less"
+  become: yes
+- name: psmisc
+  package:
+    name: "psmisc"
+  become: yes

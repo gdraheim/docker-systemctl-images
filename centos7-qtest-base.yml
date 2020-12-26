@@ -1,0 +1,101 @@
+# qTest 9.9.1 dependencies
+# PostgreSQL 9.5.4 to 10
+# ElasticSearch 6.5 to 6.8.1 / with Java 1.8
+# In a previous release, the qtestctl package, moved from Oracle Jdk 1.8.0_144 to Open JDK 1.8.0_212.
+
+- hosts: localhost
+  vars:
+     base_image: "centos:7.9.2009"
+     base_command: "sleep 900"
+     tagrepo: "localhost:5000/systemctl"
+     tagname: "qtestctl"
+     tagversion: "latest"
+     docker: docker
+     postgres_username: "qtestctl"
+     postgres_password: "qTest.2020"
+     POSTGRESQL96: yes
+  tasks:
+    - name: downloads upfront
+      import_role:
+         name: "qtestctl"
+         tasks_from: "software_download.yml"
+         allow_duplicates: yes
+    - name: name of setup container
+      set_fact:
+         container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+    - name: name of setup container
+      set_fact:
+         container1: "{{ tagname.replace('/','-') + '-build-' }}"
+      when: LOCAL is defined
+    - debug: var=container1
+    - name: remove setup container
+      command: "{{docker}} rm -f '{{ container1 }}'"
+      ignore_errors: yes
+    - name: start docker mirror package repo
+      shell: ./docker_mirror.py start {{base_image}} -a
+      register: mirror
+    - name: start setup container
+      command: "{{docker}} run -d --rm=true {{ mirror.stdout_lines[0] }} \
+                     --name '{{ container1 }}' '{{ base_image }}' {{base_command}}"
+    - name: initial setup container
+      add_host:
+        hostname: setup
+        ansible_host: "{{ container1 }}"
+        ansible_connection: 'docker'
+        ansible_user: "root"
+        # ansible_python_interpreter: /usr/bin/python
+    - name: setup deployment user
+      delegate_to: setup
+      import_role: 
+         name: "setup-deployment-user"
+      vars:
+         deployment_docker: yes
+    - name: attach setup container
+      add_host:
+        hostname: server
+        groups: postgres,elasticsearch,qtest
+        ansible_host: "{{ container1 }}"
+        ansible_connection: 'docker'
+        ansible_user: "ansible"
+        #             ^^^^^^^^^
+        # ansible_python_interpreter: /usr/bin/python
+    - name: gather facts on it
+      delegate_to: server
+      setup:
+        gather_subset: "all"
+    - name: setup systemctl replacement
+      delegate_to: server
+      import_role:
+         name: "setup-systemctl-replacement"
+      vars:
+         assume_docker: yes
+    - name: setup the postgres server
+      delegate_to: server
+      import_role: 
+         name: "postgres"
+      when: POSTGRESQL96 is not defined
+    - name: setup the postgres server
+      delegate_to: server
+      import_role: 
+         name: "rh-postgresql96"
+      when: POSTGRESQL96 is defined
+    - name: setup the elasticsearch server
+      delegate_to: server
+      import_role: 
+         name: "elasticsearch"
+    - name: setup the qtestctl home
+      delegate_to: server
+      import_role: 
+         name: "qtestctl"
+    - name: prepare qtestsetup
+      delegate_to: server
+      import_role: 
+         name: "qtestsetup"
+    - name: commit the container
+      command: "{{docker}} commit \
+        -c 'EXPOSE {{postgres_port}}' \
+        -c 'CMD [\"/usr/bin/systemctl\"]' \
+        '{{ container1 }}' '{{ tagrepo }}/{{ tagname }}:{{ tagversion }}'"
+    - name: remove setup container
+      command: "{{docker}} rm -f '{{ container1 }}'"
+      ignore_errors: yes
