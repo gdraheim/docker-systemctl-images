@@ -24,10 +24,9 @@
     path: "{{postgres_data}}/postgresql.conf"
   become: yes
 - name: set postgres non-local
-  lineinfile:
-    regexp: ".*host.*ident"
-    line: "# &"
-    backrefs: yes
+  replace:
+    regexp: "(.*host.*ident)"
+    replace: '# \1'
     path: "{{postgres_data}}/pg_hba.conf"
   become: yes
 - name: set postgres hba access
@@ -46,7 +45,7 @@
      set -ex
      systemctl start {{postgres_service}}
      if [ -n '{{postgres_username}}' ]; then
-     echo "CREATE USER {{postgres_username}} LOGIN ENCRYPTED PASSWORD '{{postgres_password}}'" \
+     echo "CREATE USER {{postgres_username}} LOGIN ENCRYPTED PASSWORD '{{postgres_password}}' CREATEDB" \
        | runuser -u postgres /usr/bin/psql
      fi
      if [ -n '{{postgres_testuser}}' ]; then
