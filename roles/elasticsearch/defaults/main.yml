@@ -1,8 +1,10 @@
 elasticsearch_java_packages:
   - "java-1.8.0-openjdk"
 
-elasticsearch_download: "https://download.elastic.co/elasticsearch/elasticsearch"
-elasticsearch_rpm: "elasticsearch-1.7.3.noarch.rpm"
+elasticsearch_download: "https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.8.1.rpm"
+# elasticsearch_url: "https://download.elastic.co/elasticsearch/elasticsearch"
+# elasticsearch_rpm: "elasticsearch-1.7.3.noarch.rpm"
 elasticsearch_software: "Software/ElasticSearch"
 
 elasticsearch_service: elasticsearch
+

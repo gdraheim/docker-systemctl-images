@@ -1,5 +1,8 @@
 # Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
 
+- set_fact:
+    elasticsearch_rpm: "{{ elasticsearch_download | basename }}"
+  when: elasticsearch_rpm is undefined
 - name: upload check
   local_action: 'stat path="{{elasticsearch_software}}/{{elasticsearch_rpm}}"'
   register: have_download

@@ -1,5 +1,11 @@
 # Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
 
+- set_fact:
+    elasticsearch_rpm: "{{ elasticsearch_download | basename }}"
+  when: elasticsearch_rpm is undefined
+- set_fact:
+    elasticsearch_url: "{{ elasticsearch_download.replace('/' + elasticsearch_rpm, '') }}"
+  when: elasticsearch_url is undefined
 - name: download check
   stat: path="{{elasticsearch_software}}/{{elasticsearch_rpm}}"
   register: need_download
@@ -11,5 +17,5 @@
 - name: download the software
   get_url:
     dest: "{{elasticsearch_software}}"
-    url: "{{elasticsearch_download}}/{{elasticsearch_rpm}}"
+    url: "{{elasticsearch_url}}/{{elasticsearch_rpm}}"
   when: not need_download.stat.exists
