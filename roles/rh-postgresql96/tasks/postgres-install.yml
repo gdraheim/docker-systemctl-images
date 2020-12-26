@@ -1,0 +1,38 @@
+- name: source
+  set_fact:
+    postgres_source0: "source scl_source enable rh-postgresql96"
+    postgres_source: "source /opt/rh/rh-postgresql96/enable"
+- name: install postgresql-server
+  package:
+    name:
+      - rh-postgresql96-server
+      - rh-postgresql96-contrib
+  become: yes
+  # when CentOS with SCLo
+  ignore_errors: yes
+  register: scl_postgresql96
+- name: install postgresql-server dependencies
+  shell: |
+     yum install -y libxslt libselinux-utils scl-utils policycoreutils-python uuid
+  become: yes
+  when: scl_postgresql96.failed
+- name: install postgresql-server
+  shell: |
+     set -ex
+     cd {{rh_postgresql96_software}} || cd ~{{ansible_user}}/{{rh_postgresql96_software}}
+     pwd
+     rpm -i {{ rh_postgresql96_rpms | join(' ') }}
+  become: yes
+  when: scl_postgresql96.failed
+- name: reinstall systemctl.py
+  shell: "test ! -f /usr/bin/systemctl.py  || cp -v /usr/bin/systemctl.py /usr/bin/systemctl"
+  become: yes
+  register: done
+  changed_when: "' -> ' in done.stdout"
+- name: scl enable profile
+  copy:
+    dest: "/etc/profile.d/enable-rh-postgresql96.sh"
+    content: |
+      #! /bin/sh
+      {{postgres_source}}
+  become: yes

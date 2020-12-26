@@ -1,0 +1,52 @@
+- set_fact:
+     postgres_data: "/var/opt/rh/rh-postgresql96/lib/pgsql/data"
+     postgres_service: "rh-postgresql96-postgresql.service"
+     postgres_source: "source /opt/rh/rh-postgresql96/enable"
+- name: initdb postgresql-server
+  shell: |
+     {{postgres_source}}
+     postgresql-setup initdb
+  become: yes
+- name: set postgres listen
+  lineinfile:
+    regexp: ".*listen_addresses.*"
+    line: "listen_addresses = '{{postgres_listen}}'"
+    path: "{{postgres_data}}/postgresql.conf"
+  become: yes
+- name: set postgres non-local
+  replace:
+    regexp: "(.*host.*ident)"
+    replace: '# \1'
+    path: "{{postgres_data}}/pg_hba.conf"
+  become: yes
+- name: set postgres hba access
+  lineinfile:
+    regexp: "host all all"
+    line: "host all all {{postgres_allows}} md5"
+    path: "{{postgres_data}}/pg_hba.conf"
+  become: yes
+- name: reinstall systemctl.py
+  shell: "test ! -f /usr/bin/systemctl.py  || cp -v /usr/bin/systemctl.py /usr/bin/systemctl"
+  become: yes
+  register: done
+  changed_when: "' -> ' in done.stdout"
+- name: create postgres user
+  shell: |
+     set -ex
+     {{postgres_source}}
+     systemctl start {{postgres_service}}
+     if [ -n '{{postgres_username}}' ]; then
+     echo "CREATE USER {{postgres_username}} LOGIN ENCRYPTED PASSWORD '{{postgres_password}}' SUPERUSER CREATEDB" \
+       | runuser -u postgres psql
+     fi
+     if [ -n '{{postgres_testuser}}' ]; then
+     echo "CREATE USER {{postgres_testuser}} LOGIN ENCRYPTED PASSWORD '{{postgres_testpass}}'" \
+       | runuser -u postgres psql
+     fi
+     systemctl stop {{postgres_service}}
+  become: yes
+- name: enable postgres server
+  service:
+     name: "{{postgres_service}}"
+     enabled: yes
+  become: yes

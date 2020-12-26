@@ -1,0 +1,19 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- set_fact:
+    rh_postgresql96_rpm: "{{ rh_postgresql96_rpms[0] }}"
+  when: rh_postgresql96_rpm is undefined
+- name: download check
+  stat: path="{{rh_postgresql96_software}}/{{rh_postgresql96_rpm}}"
+  register: need_download
+- name: "mkdir for software"
+  file:
+    path: "{{rh_postgresql96_software}}"
+    owner: "{{ansible_user}}"
+    state: "directory"
+- name: download the software
+  get_url:
+    dest: "{{rh_postgresql96_software}}"
+    url: "{{rh_postgresql96_download}}/{{item}}"
+  with_items: "{{rh_postgresql96_rpms}}"
+  when: not need_download.stat.exists

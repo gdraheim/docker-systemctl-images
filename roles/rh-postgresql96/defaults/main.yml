@@ -1,0 +1,17 @@
+postgres_username: testuser_OK
+postgres_password: P@ssw0rd.bca446713c7498e62850722da36bd680
+postgres_testuser: ""
+postgres_testpass: P@ssw0rd.390baab0b82d21f7a831476df0f632aa
+postgres_listen: "*"
+postgres_allows: "0.0.0.0/0"
+postgres_port: 5432
+
+rh_postgresql96_software: Software/rh-postgresql96
+rh_postgresql96_download: http://ftp.halifax.rwth-aachen.de/centos/7.9.2009/sclo/x86_64/rh/Packages/r/
+rh_postgresql96_rpms:
+  - rh-postgresql96-postgresql-9.6.10-1.el7.x86_64.rpm
+  - rh-postgresql96-postgresql-contrib-9.6.10-1.el7.x86_64.rpm
+  - rh-postgresql96-postgresql-libs-9.6.10-1.el7.x86_64.rpm
+  - rh-postgresql96-postgresql-server-9.6.10-1.el7.x86_64.rpm
+  - rh-postgresql96-runtime-3.0-10.el7.x86_64.rpm
+ 

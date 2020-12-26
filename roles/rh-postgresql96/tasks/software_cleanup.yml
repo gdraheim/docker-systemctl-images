@@ -1,0 +1,6 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- name: "rmdir for software"
+  file:
+    path: "{{rh_postgresql96_software}}"
+    state: "absent"

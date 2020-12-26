@@ -1,0 +1,20 @@
+# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+
+- set_fact:
+    rh_postgresql96_rpm: "{{ rh_postgresql96_rpms[0] }}"
+  when: rh_postgresql96_rpm is undefined
+- name: upload check
+  local_action: 'stat path="{{rh_postgresql96_software}}/{{rh_postgresql96_rpm}}"'
+  register: have_download
+- name: inst dir
+  file: 
+    path: "{{rh_postgresql96_software}}" 
+    state: "directory" 
+    owner: "{{ansible_user}}"
+  become: yes
+- name: upload rpm
+  copy: 
+    src: "{{rh_postgresql96_software}}/{{item}}" 
+    dest: "{{rh_postgresql96_software}}"
+  with_items: "{{rh_postgresql96_rpms}}"
+  when: have_download.stat.exists
