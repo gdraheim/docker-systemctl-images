@@ -15,8 +15,6 @@ EXPOSE 80
 COPY files/docker/systemctl.py /usr/bin/systemctl
 RUN yum install -y epel-release           psmisc
 RUN echo 'sslverify=false' >> /etc/yum.conf
-RUN cat /etc/yum.repos.d/epel.repo
-RUN curl 'https://mirrors.fedoraproject.org/metalink?repo=epel-7&arch=x86_64'
 RUN yum repolist
 RUN yum install -y httpd httpd-tools mariadb-server mariadb php phpmyadmin
 RUN echo "<?php phpinfo(); ?>" > ${INDEX_PHP}
