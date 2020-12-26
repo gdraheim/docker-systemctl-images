@@ -2106,7 +2106,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         for attempt in xrange(10):
             time.sleep(1)
-            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2114,8 +2114,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
+            text = open("{testdir}/result.txt".format(**locals())).read()
+            if "503 Service Unavailable" in text:
+                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                continue
+            if "<h1>" in text:
+                break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -2161,7 +2167,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         for attempt in xrange(10):
             time.sleep(1)
-            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
+            cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
             out, err, end = output3(cmd.format(**locals()))
             if "503 Service Unavailable" in err:
                 logg.info("[%i] ..... 503 %s", attempt, greps(err, "503 "))
@@ -2169,8 +2175,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
+            text = open("{testdir}/result.txt".format(**locals())).read()
+            if "503 Service Unavailable" in text:
+                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                continue
+            if "<h1>" in text:
+                break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin"
+        cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
