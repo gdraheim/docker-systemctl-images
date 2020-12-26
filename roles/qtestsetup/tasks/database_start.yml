@@ -1,0 +1,10 @@
+- name: start postgresql
+  service:
+     name: "{{postgres_service}}"
+     state: started
+  become: yes
+- name: start elasticsearch
+  service:
+     name: elasticsearch
+     state: started
+  become: yes

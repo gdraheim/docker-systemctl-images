@@ -1,0 +1,10 @@
+- name: stop postgresql
+  service:
+     name: "{{postgres_service}}"
+     state: stopped
+  become: yes
+- name: stop elasticsearch
+  service:
+     name: elasticsearch
+     state: stopped
+  become: yes

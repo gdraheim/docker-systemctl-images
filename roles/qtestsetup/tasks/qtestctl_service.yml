@@ -1,0 +1,80 @@
+- name: qtest_service
+  set_fact:
+     qtest_service: "qtest.service"
+  when: qtest_service is undefined
+- name: postgres_host
+  set_fact:
+     postgres_host: 127.0.0.1
+  when: postgres_host is undefined
+- name: postgres_port
+  set_fact:
+     postgres_port: 5432
+  when: postgres_port is undefined
+- name: postgres_enable
+  set_fact:
+     postgres_enable: "/opt/rh/rh-postgresql96/enable"
+  when: postgres_enable is undefined
+#
+- name: install qtest services
+  shell: |
+     set -ex
+     cd {{qtest_home}}
+     ./install
+  become: yes
+- name: systemd qtest services
+  shell: |
+     ln -sf {{qtest_home}}/service/{{qtest_service}} /etc/systemd/system/
+  become: yes
+- name: enable qtest services
+  shell: |
+     systemctl enable qtest
+  become: yes
+- name: patch qtest services
+  lineinfile: 
+     path: "{{qtest_home}}/service/{{qtest_service}}"
+     regexp: "After=.*"
+     insertafter: "Description"
+     line: "After={{postgres_service}}"
+  become: yes
+  when: postgres_service is defined
+- name: wait_pg_isready.sh
+  template:
+     src: templates/wait_pg_isready.sh
+     mode: 775
+     dest: "{{qtest_home}}/"
+  become: yes
+- name: patch qtest services
+  lineinfile: 
+     path: "{{qtest_home}}/service/{{qtest_service}}"
+     regexp: "ExecStartPre="
+     insertbefore: "ExecStart"
+     line: "ExecStartPre={{qtest_home}}/wait_pg_isready.sh"
+  become: yes
+- name: qtest service StandardOutput
+  lineinfile: 
+     path: "{{qtest_home}}/service/{{qtest_service}}"
+     regexp: "StandardOutput=.*"
+     insertafter: "WorkingDirectory"
+     line: "StandardOutput=file:{{qtest_home}}/logs/qtest.service.log"
+  become: yes
+- name: qtest service StandardError
+  lineinfile: 
+     path: "{{qtest_home}}/service/{{qtest_service}}"
+     regexp: "StandardError=.*"
+     insertafter: "WorkingDirectory"
+     line: "StandardError=inherit"
+  become: yes
+- name: disable qtestctl start log
+  replace:
+     path: "{{qtest_home}}/qtestctl"
+     regexp: 'APP_START" = true'
+     replace: 'APP_START" = start-with-no-logs'
+  become: yes
+- name: patch qtest services
+  lineinfile: 
+     path: "{{qtest_home}}/service/{{qtest_service}}"
+     regexp: "After=.*"
+     insertafter: "Description"
+     line: "After={{postgres_service}}"
+  become: yes
+  when: postgres_service is defined and elasticsearch_service is defined

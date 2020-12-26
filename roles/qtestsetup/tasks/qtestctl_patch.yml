@@ -1,0 +1,22 @@
+# client.jdbc.postgres.password=${pgPwdEnv}
+# /data/qtest/home/manager/build.gradle
+
+- name: override postgres.password
+  replace:
+     path: "{{qtest_home}}/manager/build.gradle"
+     regexp: "(jdbc.postgres.password.*)pgPwdEnv"
+     replace: '\g<1>pgPwd'
+  become: yes
+- name: disable qtestctl start log
+  replace:
+     path: "{{qtest_home}}/qtestctl"
+     regexp: 'APP_START" = true'
+     replace: 'APP_START" = start-with-log-ignored'
+  become: yes
+  when: False
+- name: elasticsearch disk
+  lineinfile:
+    path: "/etc/elasticsearch/elasticsearch.yml"
+    regexp: "cluster.routing.allocation.disk.threshold_enabled"
+    line: "cluster.routing.allocation.disk.threshold_enabled: false"
+  become: yes

@@ -1,0 +1,120 @@
+- hosts: localhost
+  vars:
+     base_image: "centos:7.9.2009"
+     base_image0: "localhost:5000/systemctl/qtestctl"
+     base_command: "sleep 9000"
+     tagrepo: "localhost:5000/systemctl"
+     tagname: "qtestsetup"
+     tagversion: "latest"
+     docker: docker
+     postgres_username: "qtestctl"
+     postgres_password: "qTest.2020"
+     postgres_service0: "postgresql.service"
+     postgres_service: "rh-postgresql96-postgresql.service"
+     elasticsearch_service: "elasticsearch.service"
+     qtest_port: 8080
+  tasks:
+    - name: name of setup container
+      set_fact:
+         container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
+      tags:
+        - startstop
+    - name: name of setup container
+      set_fact:
+         container1: "{{ tagname.replace('/','-') + '-build' }}"
+      when: LOCAL is defined
+      tags:
+        - startstop
+    - debug: var=container1
+    - name: remove setup container
+      command: "{{docker}} rm -f '{{ container1 }}'"
+      ignore_errors: yes
+    - name: start docker mirror package repo
+      shell: "./docker_mirror.py start {{base_image}} -a"
+      register: mirror
+    - name: start setup container
+      command: "{{docker}} run -d --rm=true {{ mirror.stdout_lines[0] }} \
+                     --name '{{ container1 }}' '{{ base_image0 }}' {{base_command}}"
+    - name: attach setup container
+      add_host:
+        hostname: server
+        groups: postgres,elasticsearch,qtest
+        ansible_host: "{{ container1 }}"
+        ansible_connection: 'docker'
+        ansible_user: "ansible"
+        #             ^^^^^^^^^
+        # ansible_python_interpreter: /usr/bin/python
+    - name: gather facts on it
+      delegate_to: server
+      setup:
+        gather_subset: "all"
+    - name: start postgresql
+      delegate_to: server
+      service:
+         name: "{{postgres_service}}"
+         state: started
+      become: yes
+      tags:
+        - startstop
+    - name: start elasticsearch
+      delegate_to: server
+      service:
+         name: "{{elasticsearch_service}}"
+         state: started
+      become: yes
+      tags:
+        - startstop
+    - name: prepare qtestsetup
+      delegate_to: server
+      import_role: 
+         name: "qtestsetup"
+    - name: configure qtestsetup
+      delegate_to: server
+      import_role: 
+         name: "qtestsetup"
+         tasks_from: "qtestctl_configure.yml"
+    - name: migrate qtestsetup
+      delegate_to: server
+      import_role: 
+         name: "qtestsetup"
+         tasks_from: "qtestctl_migrate.yml"
+    - name: service qtestsetup
+      delegate_to: server
+      import_role: 
+         name: "qtestsetup"
+         tasks_from: "qtestctl_service.yml"
+    - name: startstop qtestsetup
+      delegate_to: server
+      import_role: 
+         name: "qtestsetup"
+         tasks_from: "qtestctl_startstop.yml"
+      tags:
+        - startstop
+    - name: stop postgresql
+      delegate_to: server
+      service:
+         name: "{{postgres_service}}"
+         state: stopped
+      become: yes
+      tags:
+        - startstop
+    - name: stop elasticsearch
+      delegate_to: server
+      service:
+         name: "{{elasticsearch_service}}"
+         state: stopped
+      become: yes
+      tags:
+        - startstop
+    - name: commit the container
+      command: "{{docker}} commit \
+        -c 'EXPOSE {{qtest_port}}' \
+        -c 'CMD [\"/usr/bin/systemctl\"]' \
+        '{{ container1 }}' '{{ tagrepo }}/{{ tagname }}:{{ tagversion }}'"
+      tags:
+        - commit
+    - name: remove setup container
+      command: "{{docker}} rm -f '{{ container1 }}'"
+      ignore_errors: yes
+      tags:
+        - commit

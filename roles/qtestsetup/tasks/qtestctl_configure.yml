@@ -1,0 +1,7 @@
+- name: configure qtest with expect script
+  shell: |
+     set -ex
+     cd {{qtest_home}}
+     # ./qtest start
+     python ./qtest-config.py
+  become: yes

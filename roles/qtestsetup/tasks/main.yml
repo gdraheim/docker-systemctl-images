@@ -1,0 +1,9 @@
+- include: debug_tools.yml
+# - include database_start.yml
+- include: qtestctl_expect.yml
+- include: qtestctl_patch.yml
+# - include: qtestctl_configure.yml
+# - include: qtestctl_migrate.yml
+# - include: qtestctl_service.yml
+# - include: qtestctl_startstop.yml
+# - include database_stop.yml

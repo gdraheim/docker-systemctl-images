@@ -1,0 +1,26 @@
+- name: postgres_host
+  set_fact:
+     postgres_host: "127.0.0.1"
+  when: postgres_host is undefined
+- name: postgres_port
+  set_fact:
+     postgres_port: "5432"
+  when: postgres_port is undefined
+- name: elasticsearch_host
+  set_fact:
+     elasticsearch_host: "127.0.0.1"
+  when: elasticsearch_host is undefined
+- name: elasticsearch_port
+  set_fact:
+     elasticsearch_port: "9200"
+  when: elasticsearch_port is undefined
+#
+- name: install pexpect
+  package:
+    name: pexpect
+  become: yes
+- name: expect script
+  template:
+     src: templates/qtest-config.py
+     dest: "{{qtest_home}}/"
+  become: yes

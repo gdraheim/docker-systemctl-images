@@ -1,0 +1,9 @@
+- name: migrate qtest with offline debug
+  shell: |
+     cd {{qtest_home}} || exit 1
+     ##runuser -l root -c "cd {{qtest_home}} && ./qtestctl --offline start --debug"
+     # ./qtestctl --offline start --debug # 9.6.1
+     ./qtestctl --offline --debug # 9.9.1
+  become: yes
+  register: done
+  # failed_when: "'successfully stopped' not in done.stdout"
