@@ -1,0 +1,18 @@
+el elastic:
+	ansible-playbook centos7-elasticsearch-docker.yml -e LOCAL=yes -vv
+p96 postgresql96: 
+	ansible-playbook centos7-rh-postgresql96-docker.yml -e LOCAL=yes -vv
+
+ba base:
+	ansible-playbook centos7-qtest-base.yml -e LOCAL=yes -vv
+st setup:
+	ansible-playbook centos7-qtest-setup.yml -e LOCAL=yes -vv
+
+qt qtest:
+	- docker stop qtest
+	- docker rm -f qtest
+	addhost=`./docker_mirror.py start centos:7.7 -a` ; \
+	docker run -d --name=qtest $$addhost -p 8080:8080 localhost:5000/systemctl/qtestsetup 
+	: docker exec -it qtest bash
+q: ; docker rm -f qtest
+
