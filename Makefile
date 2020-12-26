@@ -50,3 +50,5 @@ ce centos:   ; ./testbuilds.py make_centos
 
 clean:
 	- rm -rf tmp/tmp.test_*
+
+-include Makefile.qtest
