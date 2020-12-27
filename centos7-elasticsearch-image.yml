@@ -8,7 +8,7 @@
     - name: name of setup container
       set_fact:
          container1: "{{ tagname.replace('/','-') + '-build-' + lookup('pipe', 'echo $PPID') }}"
-    - debug: var=setup_container
+    - debug: var=container1
     - name: remove setup container
       command: docker rm -f '{{ container1 }}'
       ignore_errors: yes
@@ -32,7 +32,7 @@
     - name: setup systemctl.py
       delegate_to: '{{ container1 }}'
       import_role: 
-         name: "deployment-systemctl-replacement"
+         name: "setup-systemctl-replacement"
       vars:
          assume_docker: yes
     - name: setup the container
