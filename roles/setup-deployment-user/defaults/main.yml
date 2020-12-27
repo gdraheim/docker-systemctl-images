@@ -1,3 +1,6 @@
-deployment_user: ansible
-deployment_ipv6: no
-deployment_docker: no
+setup_ansible_user: ansible
+setup_ansible_ipv6: no
+setup_ansible_docker: no
+setup_ansible_python3: no
+setup_ansible_bin_python3: no
+setup_ansible_libexec_python3: no

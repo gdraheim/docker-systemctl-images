@@ -1,0 +1,27 @@
+- name: assume python3 for Redhat or CentOS 8
+  set_fact:
+     setup_ansible_python3: yes
+     setup_ansible_libexec_python3: yes
+  when: ansible_os_family == "RedHat" and ansible_lsb.major_release|int = 8
+- name: check for bin-python3 available
+  stat:
+     path: /usr/bin/python3
+  register: setup_ansible_stat_bin_python3
+  when: "not setup_ansible_python3 and not setup_ansible_bin_python3"
+- name: check for libexec-python3 available
+  stat:
+     path: /usr/libexec/platform-python
+  register: setup_ansible_stat_libexec_python3
+  when: "not setup_ansible_python3 and not setup_ansible_libexec_python3"
+- name: setup ansible bin python3
+  set_fact:
+     setup_ansible_bin_python3: yes
+  when: "setup_ansible_stat_bin_python3.stat.exists"
+- name: setup ansible libexec python3
+  set_fact:
+     setup_ansible_libexec_python3: yes
+  when: "setup_ansible_stat_libexec_python3.stat.exists"
+- name: setup ansible python3
+  set_fact:
+     setup_ansible_python3: yes
+  when: "setup_ansible_bin_python3 or setup_ansible_libexec_python3"

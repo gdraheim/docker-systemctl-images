@@ -6,7 +6,7 @@
     sed -i  -e '/%wheel.*NOPASSWD/{s/^[#]* //;n}' -e 's/^.*%wheel/# &/' /etc/sudoers
 - name: create user ansible in wheel group
   user:
-    name: "{{deployment_user}}"
+    name: "{{setup_ansible_user}}"
     group: root
     groups: wheel
 - name: remove ipv6 from localhost entry
@@ -14,4 +14,4 @@
     sed -e "/^::1/s/[	 ]localhost//" /etc/hosts > /etc/hosts.tmp
     cat /etc/hosts.tmp > /etc/hosts
     rm /etc/hosts.tmp
-  when: not deployment_ipv6
+  when: not setup_ansible_ipv6

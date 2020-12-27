@@ -1,22 +1,5 @@
-- name: install replacement systemctl.py
-  copy:
-    src: files/docker/systemctl.py
-    dest: /usr/bin/systemctl.py
-    mode: 0755
-  become: yes
-  when: "deployment_docker or ansible_connection == 'docker'"
-- name: install replacement systemctl.log
-  file:
-    path: /var/log/systemctl.log
-    state: touch
-  become: yes
-  when: "deployment_docker or ansible_connection == 'docker'"
-- name: ansible check_systemd
-  file:
-    path: /run/systemd/system
-    state: directory
-  become: yes
-  when: "deployment_docker or ansible_connection == 'docker'"
+# the actual setup has went into a separate ansible role - please check:
+# : roles/setup-systemctl-replacement/tasks/systemctl-docker-replacement.yml
 - name: reinstall systemctl.py
   shell: "test ! -f /usr/bin/systemctl.py || cp -v /usr/bin/systemctl.py /usr/bin/systemctl"
   become: yes

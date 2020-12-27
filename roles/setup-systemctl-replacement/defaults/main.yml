@@ -1,1 +1,2 @@
 deployment_docker: no
+assume_docker: no

@@ -1,22 +1,43 @@
+- name: setup ansible docker default
+  set_fact:
+     _setup_ansible_docker: no
+- name: setup ansible docker connection
+  set_fact:
+     _setup_ansible_docker: yes
+  when: "setup_ansible_docker or ansible_connection == 'docker'"
 - name: install replacement systemctl.py
   copy:
     src: files/docker/systemctl.py
     dest: /usr/bin/systemctl.py
     mode: 0755
   become: yes
-  when: "deployment_docker or assume_docker or ansible_connection == 'docker'"
+  when: "_setup_ansible_docker and not setup_ansible_python3"
+- name: install replacement systemctl3.py
+  copy:
+    src: files/docker/systemctl3.py
+    dest: /usr/bin/systemctl.py
+    mode: 0755
+  become: yes
+  when: "_setup_ansible_docker and setup_ansible_python3"
+- name: use libexec/python for systemctl3.py
+  replace:
+    dest: /usr/bin/systemctl.py
+    regex: "/usr/bin/python3"
+    replace "/usr/libexec/platform-python"
+  become: yes
+  when: "_setup_ansible_docker and setup_ansible_python3 and setup_ansible_libexec_python3"
 - name: install replacement systemctl.log
   file:
     path: /var/log/systemctl.log
     state: touch
   become: yes
-  when: "deployment_docker or assume_docker or ansible_connection == 'docker'"
+  when: "_setup_ansible_docker"
 - name: ansible check_systemd
   file:
     path: /run/systemd/system
     state: directory
   become: yes
-  when: "deployment_docker or assume_docker or ansible_connection == 'docker'"
+  when: "_setup_ansible_docker"
 - name: reinstall systemctl.py
   shell: "test ! -f /usr/bin/systemctl.py || cp -v /usr/bin/systemctl.py /usr/bin/systemctl"
   become: yes
