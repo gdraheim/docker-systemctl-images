@@ -41,9 +41,10 @@ _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/image"
-CENTOS = "centos:7.7.1908"
-UBUNTU = "ubuntu:14.04"
-OPENSUSE = "opensuse/leap:15.0"
+CENTOS = "centos:7.9.2009"
+UBUNTU = "ubuntu:20.04"
+OPENSUSE = "opensuse/leap:15.2"
+SOFTWARE = "../Software"
 
 _curl = "curl"
 _docker = "docker"
@@ -180,6 +181,35 @@ def os_path(root, path):
     return os.path.join(root, path)
 def docname(path):
     return os.path.splitext(os.path.basename(path))[0]
+
+def link_software(software, parts):
+    software = software or "Software"
+    shelf = SOFTWARE
+    for part in parts.split(","):
+        item = os.path.join(shelf, part)
+        if os.path.isdir(item):
+            for dirpath, dirnames, filenames in os.walk(item):
+                basepath = dirpath.replace(shelf+"/", "")
+                for filename in filenames:
+                    intofile = os.path.join(software, basepath, filename)
+                    fromfile = os.path.join(dirpath, filename)
+                    intodir = os.path.dirname(intofile)
+                    if not os.path.isdir(intodir):
+                        os.makedirs(intodir)
+                    if not os.path.isfile(intofile):
+                        os.link(fromfile, intofile)
+def unlink_software(software, parts):
+    software = software or "Software"
+    shelf = SOFTWARE
+    for part in parts.split(","):
+        item = os.path.join(shelf, part)
+        if os.path.isdir(item):
+            for dirpath, dirnames, filenames in os.walk(item):
+                basepath = dirpath.replace(shelf+"/", "")
+                for filename in filenames:
+                    intofile = os.path.join(software, basepath, filename)
+                    if os.path.isfile(intofile):
+                        os.unlink(intofile)
 
 class DockerSystemctlReplacementTest(unittest.TestCase):
     def caller_testname(self):
@@ -2970,6 +3000,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        link_software("Software", "ElasticSearch")
         base_url = "https://download.elastic.co/elasticsearch/elasticsearch"
         filename = "elasticsearch-1.7.3.noarch.rpm"
         into_dir = "Software/ElasticSearch"
@@ -3002,13 +3033,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 8; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
+        for attempt in xrange(30):
+             cmd = "{curl} http://{container}:9200/?pretty"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("[{attempt}] ({end}): {out}".format(**locals()))
+             if not end: break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
+        for attempt in xrange(3):             
+             cmd = "{docker} exec {testname} systemctl is-active elasticsearch"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("elasticsearch {out}".format(**locals()))
+             if out.strip() == "active": break
+             time.sleep(1)
         # STOP
         cmd = "{docker} exec {testname} systemctl status elasticsearch"
-        sh____(cmd.format(**locals()))
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
         # CHECK
@@ -3030,6 +3073,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+        unlink_software("Software", "ElasticSearch")
     def test_867_centos_elasticsearch_image(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -3038,6 +3082,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        link_software("Software", "ElasticSearch")
         testname=self.testname()
         testdir = self.testdir()
         playbook="centos7-elasticsearch-image.yml"
@@ -3060,7 +3105,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
+        for attempt in xrange(30):
+             cmd = "{curl} http://{container}:9200/?pretty"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("[{attempt}] ({end}): {out}".format(**locals()))
+             if not end: break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -3082,6 +3133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
+        unlink_software("Software", "ElasticSearch")
     def test_877_centos_elasticsearch_deploy(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -3090,6 +3142,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        link_software("Software", "ElasticSearch")
         testname=self.testname()
         testdir = self.testdir()
         playbook="centos7-elasticsearch-deploy.yml"
@@ -3120,7 +3173,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
+        for attempt in xrange(30):
+             cmd = "{curl} http://{container}:9200/?pretty"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("[{attempt}] ({end}): {out}".format(**locals()))
+             if not end: break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -3148,6 +3207,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+        unlink_software("Software", "ElasticSearch")
     def test_887_centos_elasticsearch_docker(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -3156,6 +3216,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        link_software("Software", "ElasticSearch")
         testname=self.testname()
         testdir = self.testdir()
         playbook="centos7-elasticsearch-docker.yml"
@@ -3178,7 +3239,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
+        for attempt in xrange(30):
+             cmd = "{curl} http://{container}:9200/?pretty"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("[{attempt}] ({end}): {out}".format(**locals()))
+             if not end: break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -3200,6 +3267,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
+        unlink_software("Software", "ElasticSearch")
     def test_897_centos_elasticsearch_docker_playbook(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -3208,6 +3276,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        link_software("Software", "ElasticSearch")
         testname=self.testname()
         testdir = self.testdir()
         playbook="centos7-elasticsearch.docker.yml"
@@ -3230,7 +3299,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
+        for attempt in xrange(30):
+             cmd = "{curl} http://{container}:9200/?pretty"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("[{attempt}] ({end}): {out}".format(**locals()))
+             if not end: break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
@@ -3252,6 +3327,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
+        unlink_software("Software", "ElasticSearch")
 
 if __name__ == "__main__":
     from optparse import OptionParser
