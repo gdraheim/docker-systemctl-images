@@ -36,10 +36,10 @@
         ansible_connection: 'docker'
         ansible_user: "root"
         # ansible_python_interpreter: /usr/bin/python
-    - name: setup deployment user
+    - name: setup ansible user
       delegate_to: postgres-root
       import_role: 
-         name: "setup-deployment-user"
+         name: "setup-ansible-user"
       vars:
          deployment_docker: yes
     - name: attach setup container

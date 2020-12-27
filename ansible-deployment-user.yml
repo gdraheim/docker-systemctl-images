@@ -3,5 +3,5 @@
     setup_ansible_ipv6: no
     setup_ansible_docker: no
   roles:
-    - setup-deployment-user
+    - setup-ansible-user
 
