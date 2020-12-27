@@ -21,3 +21,6 @@
     regexp: "^network.host:.*"
     line: "network.host: 0.0.0.0"
   become: yes
+- name: truncate systemctl.py
+  shell: truncate -s0 -c /var/log/systemctl.log
+  become: yes
