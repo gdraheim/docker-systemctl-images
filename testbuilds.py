@@ -3117,7 +3117,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # STOP
         cmd = "{docker} exec {testname} systemctl status elasticsearch"
-        sh____(cmd.format(**locals()))
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
@@ -3185,7 +3185,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         # STOP
         cmd = "{docker} exec {testname} systemctl status elasticsearch"
-        sh____(cmd.format(**locals()))
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
