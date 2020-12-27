@@ -41,12 +41,18 @@
          name: "setup-ansible-user"
       vars:
          setup_ansible_docker: yes
+    - name: setup systemctl replacement
+      delegate_to: "{{ container1 }}"
+      import_role:
+        name: "setup-systemctl-replacement"
+      vars:
+        setup_ansible_docker: yes
     - name: attach setup container
       add_host:
         hostname: "{{ container1 }}"
         groups: redis
         ansible_connection: 'docker'
-        ansible_user: "ansible"
+        ansible_user: "{{ setup_ansible_user }}"
         #             ^^^^^^^^^
         # ansible_python_interpreter: /usr/bin/python
 
