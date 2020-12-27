@@ -1,2 +1,5 @@
-deployment_docker: no
-assume_docker: no
+setup_ansible_docker: no
+setup_ansible_python3: no
+setup_ansible_bin_python3: no
+setup_ansible_libexec_python3: no
+

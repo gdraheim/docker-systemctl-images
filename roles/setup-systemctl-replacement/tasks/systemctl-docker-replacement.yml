@@ -23,7 +23,7 @@
   replace:
     dest: /usr/bin/systemctl.py
     regex: "/usr/bin/python3"
-    replace "/usr/libexec/platform-python"
+    replace: "/usr/libexec/platform-python"
   become: yes
   when: "_setup_ansible_docker and setup_ansible_python3 and setup_ansible_libexec_python3"
 - name: install replacement systemctl.log
