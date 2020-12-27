@@ -2325,7 +2325,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}:8080/sample"
+        for attempt in xrange(30):
+             cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample/"
+             out, err, end = output3(cmd.format(**locals()))
+             logg.info("(%s)=> %s\n%s", attempt, out, err)
+             filename = "{testdir}/{testname}.txt".format(**locals())
+             if os.path.exists(filename): 
+                 txt = open(filename).read()
+                 if txt.strip(): break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample/"
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
