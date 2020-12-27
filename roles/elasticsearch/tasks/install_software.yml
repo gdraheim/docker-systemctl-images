@@ -14,3 +14,10 @@
   shell: "rpm -q --info elasticsearch | grep Version"
   register: installedversion
 - debug: var=installedversion.stdout
+- name: allow any
+  lineinfile:
+    path: /etc/elasticsearch/elasticsearch.yml
+    insertafter: "#network.host"
+    regexp: "^network.host:.*"
+    line: "network.host: 0.0.0.0"
+  become: yes
