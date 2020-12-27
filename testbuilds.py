@@ -294,7 +294,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if image:
             return self.start_mirror(image, extras)
         return ""
-    def start_mirror(self, image, extras):
+    def start_mirror(self, image, extras = None):
         extras = extras or ""
         docker = _docker
         mirror = _mirror
@@ -2922,13 +2922,25 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} exec {testname} systemctl start elasticsearch -vvv"
         sh____(cmd.format(**locals()))
         # THEN
-        cmd = "sleep 9; {curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
+        for attempt in xrange(30):
+             cmd = "{curl} http://{container}:9200/?pretty"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("[{attempt}] ({end}): {out}".format(**locals()))
+             if not end: break
+             time.sleep(1)
+        cmd = "{curl} -o {testdir}/result.txt http://{container}:9200/?pretty"
         sh____(cmd.format(**locals()))
         cmd = "grep 'You Know, for Search' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
+        for attempt in xrange(3):             
+             cmd = "{docker} exec {testname} systemctl is-active elasticsearch"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("elasticsearch {out}".format(**locals()))
+             if out.strip() == "active": break
+             time.sleep(1)
         # STOP
         cmd = "{docker} exec {testname} systemctl status elasticsearch"
-        sh____(cmd.format(**locals()))
+        sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl stop elasticsearch"
         sh____(cmd.format(**locals()))
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
