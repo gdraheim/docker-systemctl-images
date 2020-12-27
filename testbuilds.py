@@ -2496,12 +2496,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active cntlm"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com/"
+        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com/"
         sh____(cmd.format(**locals()))
-        cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
+        cmd = "grep 'maps.google' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
@@ -2546,12 +2550,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active cntlm"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com/"
+        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com/"
         sh____(cmd.format(**locals()))
-        cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
+        cmd = "grep 'maps.google' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
@@ -2595,12 +2603,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 5; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active cntlm"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com/"
+        # cmd = "http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com/"
         sh____(cmd.format(**locals()))
-        cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
+        cmd = "grep 'maps.google' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         #sh____(cmd.format(**locals()))
