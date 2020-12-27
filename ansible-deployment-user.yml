@@ -1,7 +1,7 @@
 - hosts: "{{ hosts | default('all') }}"
   vars:
-    enable_ipv6: no
-    deployment_docker: no
+    setup_ansible_ipv6: no
+    setup_ansible_docker: no
   roles:
     - setup-deployment-user
 

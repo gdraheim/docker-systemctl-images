@@ -20,7 +20,7 @@
       import_role: 
          name: "setup-systemctl-replacement"
       vars:
-         assume_docker: yes
+         setup_ansible_docker: yes
     - name: setup the container
       delegate_to: '{{ container1 }}'
       import_role: 

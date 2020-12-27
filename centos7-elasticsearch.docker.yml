@@ -40,7 +40,7 @@
       import_role: 
          name: "setup-deployment-user"
       vars:
-         deployment_docker: yes
+         setup_ansible_docker: yes
     - name: attach setup container
       add_host:
         hostname: "{{ container1 }}"

@@ -48,7 +48,7 @@
         groups: postgres
         ansible_host: "{{ container1 }}"
         ansible_connection: 'docker'
-        ansible_user: "ansible"
+        ansible_user: "{{ setup_ansible_user }}"
         #             ^^^^^^^^^
         # ansible_python_interpreter: /usr/bin/python
     - name: gather facts on it
@@ -60,7 +60,7 @@
       import_role:
          name: "setup-systemctl-replacement"
       vars:
-         assume_docker: yes
+         setup_ansible_docker: yes
     - name: setup the container
       delegate_to: postgres
       import_role: 
