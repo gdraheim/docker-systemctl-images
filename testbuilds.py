@@ -2657,7 +2657,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active sshd"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "{docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2713,13 +2719,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active sshd"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "{docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2775,13 +2781,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active sshd"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "{docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
@@ -2837,13 +2843,13 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
-        sx____(cmd.format(**locals()))
-        cmd = "sleep 2; {docker} exec {testname} ps axu"
-        sx____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} systemctl is-system-running"
+        for attempt in xrange(9):
+             cmd = "{docker} exec {testname} /usr/bin/systemctl is-active ssh"
+             out, end = output2(cmd.format(**locals()))
+             logg.info("is-active => %s", out)
+             time.sleep(1)
+             if not end: break
+        cmd = "{docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
         allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
