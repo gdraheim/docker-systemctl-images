@@ -2916,6 +2916,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
+        link_software("Software", "ElasticSearch")
         testname=self.testname()
         testdir = self.testdir()
         setupfile="centos7-elasticsearch-setup.yml"
@@ -2932,11 +2933,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         prepare = " --limit {testname} -e ansible_user=root"
         cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini ansible-deployment-user.yml -vv" + prepare
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} grep __version__ /usr/bin/systemctl"
-        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} grep __version__ /usr/bin/systemctl" # systemctl.py not installed yet
+        sx____(cmd.format(**locals()))
         cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini centos7-elasticsearch-setup.yml -vv"
         sh____(cmd.format(**locals()))
-        cmd = "{docker} exec {testname} grep __version__ /usr/bin/systemctl"
+        cmd = "{docker} exec {testname} grep __version__ /usr/bin/systemctl" # systemctl.py ready
         sh____(cmd.format(**locals()))
         cmd = "{docker} commit -c 'CMD /usr/bin/systemctl' {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -2992,6 +2993,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+        unlink_software("Software", "ElasticSearch")
     def test_855_centos7_elasticsearch_dockerfile(self):
         """ Check setup of ElasticSearch on CentOs via Dockerfile"""
         #### it depends on the download of the previous ansible test ####
