@@ -5,7 +5,7 @@ FROM centos:8.1.1911
 ###############################################################################
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4476"
+      __version__="1.6.4521"
 
 ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/usr/share/phpmyadmin/config.inc.php"

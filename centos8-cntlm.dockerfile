@@ -5,7 +5,7 @@ FROM centos:8.1.1911
 ##########################################################################
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.6.4521"
 ARG ALLOWS=172.0.0.0/8
 EXPOSE 3128
 
