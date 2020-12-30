@@ -19,8 +19,8 @@ RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/default.conf
 # default was 'bind 127.0.0.1'
 
 RUN systemctl enable redis@default
-RUN systemctl disable kbdsettings
+# RUN systemctl disable kbdsettings
 
-## RUN touch /var/log/systemctl.debug.log
-## CMD /usr/bin/systemctl  # FIXME
-CMD /usr/bin/systemctl init redis@default
+RUN touch /var/log/systemctl.debug.log
+CMD /usr/bin/systemctl  # FIXME
+# CMD /usr/bin/systemctl init redis@default
