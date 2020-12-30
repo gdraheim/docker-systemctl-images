@@ -20,10 +20,10 @@ RUN sed -i "s/^bind .*/bind 0.0.0.0/" /etc/redis/default.conf
 RUN sed -i "s/^#* *requirepass .*/requirepass $PASSWORD/" /etc/redis/default.conf
 
 RUN systemctl enable redis@default
-RUN systemctl disable kbdsettings
+# RUN systemctl disable kbdsettings
 
 ## RUN touch /var/log/systemctl.debug.log
-## CMD /usr/bin/systemctl  # FIXME
-CMD /usr/bin/systemctl init redis@default
+CMD /usr/bin/systemctl  # FIXME
+# CMD /usr/bin/systemctl init redis@default
 USER redis
 
