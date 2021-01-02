@@ -1778,6 +1778,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2"
         sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} ps axu"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} systemctl default-services"
+        sh____(cmd.format(**locals()))
+        #
+        #
         cmd = "{docker} run -d --name {testname}-client {images}:{testname} sleep 3"
         sh____(cmd.format(**locals()))
         # cmd = "redis-cli -h {container} ping | tee {testdir}/{testname}.txt"
@@ -2018,14 +2024,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
-            text = open("{testdir}/result.txt".format(**locals())).read()
-            if "503 Service Unavailable" in text:
-                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
-                continue
-            if "<h1>" in text:
-                break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-            logg.info(" %s ->\n%s", cmd, text)
+            filename = "{testdir}/result.txt".format(**locals())
+            if os.path.exists(filename):
+                text = open(filename).read()
+                if "503 Service Unavailable" in text:
+                    logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                    continue
+                if "<h1>" in text:
+                    break
+                logg.info(" %s ->\n%s", cmd, text)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
@@ -2083,14 +2091,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
-            text = open("{testdir}/result.txt".format(**locals())).read()
-            if "503 Service Unavailable" in text:
-                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
-                continue
-            if "<h1>" in text:
-                break
             logg.info(" %s =>%s\n%s", cmd, end, out)
-            logg.info(" %s ->\n%s", cmd, text)
+            filename = "{testdir}/result.txt".format(**locals())
+            if os.path.exists(filename):
+                text = open(filename).read()
+                if "503 Service Unavailable" in text:
+                    logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                    continue
+                if "<h1>" in text:
+                    break
+                logg.info(" %s ->\n%s", cmd, text)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
@@ -2144,12 +2154,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
-            text = open("{testdir}/result.txt".format(**locals())).read()
-            if "503 Service Unavailable" in text:
-                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
-                continue
-            if "<h1>" in text:
-                break
+            filename = "{testdir}/result.txt".format(**locals())
+            if os.path.exists(filename):
+                text = open(filename).read()
+                if "503 Service Unavailable" in text:
+                    logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                    continue
+                if "<h1>" in text:
+                    break
             logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
@@ -2205,12 +2217,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             if "200 OK" in err:
                 logg.info("[%i] ..... 200 %s", attempt, greps(err, "200 "))
                 break
-            text = open("{testdir}/result.txt".format(**locals())).read()
-            if "503 Service Unavailable" in text:
-                logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
-                continue
-            if "<h1>" in text:
-                break
+            filename = "{testdir}/result.txt".format(**locals())
+            if os.path.exists(filename):
+                text = open(filename).read()
+                if os.path.exists(filename):
+                    if "503 Service Unavailable" in text:
+                        logg.info("[%i] ..... 503 %s", attempt, greps(text, "503 "))
+                        continue
+                    if "<h1>" in text:
+                        break
             logg.info(" %s =>%s\n%s", cmd, end, out)
         cmd = "{curl} -o {testdir}/result.txt http://{container}/phpMyAdmin/"
         sh____(cmd.format(**locals()))
@@ -2742,10 +2757,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         password = self.newpassword()
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --tag {images}:{testname}"
-        sh____(cmd.format(**locals()))
-        cmd = "{docker} rm --force {testname}"
+        # sh____(cmd.format(**locals()))
+        # cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
-        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        cmd = "{docker} rm --force {testname} ; {docker} run -d --name {testname} {images}:{testname}"
         sh____(cmd.format(**locals()))
         container = self.ip_container(testname)
         # THEN
