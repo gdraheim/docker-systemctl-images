@@ -1,3 +1,6 @@
+[![Style Check](https://github.com/gdraheim/docker-systemctl-images/actions/workflows/stylecheck.yml/badge.svg?event=push&branch=develop)](https://github.com/gdraheim/docker-systemctl-images/actions/workflows/stylecheck.yml)
+<small>. . . (with more that 50 test builds)</small>
+
 # docker systemctl images
 
 This project will use the docker-systemctl-replacement script
