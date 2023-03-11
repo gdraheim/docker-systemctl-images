@@ -20,6 +20,9 @@ RUN cp /usr/bin/systemctl3.py /usr/bin/systemctl
 
 RUN systemctl enable sshd-keygen.target --force
 RUN systemctl enable sshd
+RUN systemctl daemon-reload # make deps.cache
+RUN systemctl list-deps sshd.service
+RUN systemctl default-services
 RUN rm -vf /run/nologin
 
 #

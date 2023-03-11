@@ -21,6 +21,7 @@ RUN sed -i "s/^#* *requirepass .*/requirepass $PASSWORD/" /etc/redis/default.con
 
 RUN systemctl enable redis@default
 # RUN systemctl disable kbdsettings
+RUN systemctl daemon-reload
 
 ## RUN touch /var/log/systemctl.debug.log
 CMD /usr/bin/systemctl  # FIXME
