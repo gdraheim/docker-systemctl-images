@@ -6,9 +6,9 @@ from __future__ import print_function
 __copyright__ = "(C) Guido Draheim, licensed under the EUPL"""
 __version__ = "1.5.4476"
 
-## NOTE:
-## The testcases 1000...4999 are using a --root=subdir environment
-## The testcases 5000...9999 will start a docker container to work.
+# NOTE:
+# The testcases 1000...4999 are using a --root=subdir environment
+# The testcases 5000...9999 will start a docker container to work.
 
 import subprocess
 import os.path
@@ -64,7 +64,7 @@ def decodes(text):
         encoded = sys.getdefaultencoding()
         if encoded in ["ascii"]:
             encoded = "utf-8"
-        try: 
+        try:
             return text.decode(encoded)
         except:
             return text.decode("latin-1")
@@ -72,19 +72,19 @@ def decodes(text):
 def sh____(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
-    else:    
+    else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.check_call(cmd, shell=shell)
 def sx____(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
-    else:    
+    else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     return subprocess.call(cmd, shell=shell)
 def output(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
-    else:    
+    else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
@@ -92,7 +92,7 @@ def output(cmd, shell=True):
 def output2(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
-    else:    
+    else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE)
     out, err = run.communicate()
@@ -100,19 +100,18 @@ def output2(cmd, shell=True):
 def output3(cmd, shell=True):
     if isinstance(cmd, basestring):
         logg.info(": %s", cmd)
-    else:    
+    else:
         logg.info(": %s", " ".join(["'%s'" % item for item in cmd]))
     run = subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = run.communicate()
     return decodes(out), decodes(err), run.returncode
 def background(cmd, shell=True):
-    BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log" ])
+    BackgroundProcess = collections.namedtuple("BackgroundProcess", ["pid", "run", "log"])
     log = open(os.devnull, "wb")
     run = subprocess.Popen(cmd, shell=shell, stdout=log, stderr=log)
     pid = run.pid
     logg.info("PID %s = %s", pid, cmd)
     return BackgroundProcess(pid, run, log)
-
 
 
 def _lines(lines):
@@ -128,8 +127,8 @@ def lines(text):
     return lines
 def grep(pattern, lines):
     for line in _lines(lines):
-       if re.search(pattern, line.rstrip()):
-           yield line.rstrip()
+        if re.search(pattern, line.rstrip()):
+            yield line.rstrip()
 def greps(lines, pattern):
     return list(grep(pattern, lines))
 
@@ -150,7 +149,7 @@ def text_file(filename, content):
         for line in content[1:].split("\n"):
             if line.startswith(indent):
                 line = line[len(indent):]
-            f.write(line+"\n")
+            f.write(line + "\n")
     else:
         f.write(content)
     f.close()
@@ -178,7 +177,7 @@ def os_path(root, path):
     if not path:
         return path
     while path.startswith(os.path.sep):
-       path = path[1:]
+        path = path[1:]
     return os.path.join(root, path)
 def docname(path):
     return os.path.splitext(os.path.basename(path))[0]
@@ -188,10 +187,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         name = get_caller_caller_name()
         x1 = name.find("_")
         if x1 < 0: return name
-        x2 = name.find("_", x1+1)
+        x2 = name.find("_", x1 + 1)
         if x2 < 0: return name
         return name[:x2]
-    def testname(self, suffix = None):
+    def testname(self, suffix=None):
         name = self.caller_testname()
         if suffix:
             return name + "_" + suffix
@@ -205,16 +204,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 return port
         seconds = int(str(int(time.time()))[-4:])
         return 6000 + (seconds % 2000)
-    def testdir(self, testname = None):
+    def testdir(self, testname=None):
         testname = testname or self.caller_testname()
-        newdir = "tmp/tmp."+testname
+        newdir = "tmp/tmp." + testname
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         os.makedirs(newdir)
         return newdir
-    def rm_testdir(self, testname = None):
+    def rm_testdir(self, testname=None):
         testname = testname or self.caller_testname()
-        newdir = "tmp/tmp."+testname
+        newdir = "tmp/tmp." + testname
         if os.path.isdir(newdir):
             shutil.rmtree(newdir)
         return newdir
@@ -240,7 +239,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             for item in glob(os_path(root, folder + "/test_*")):
                 logg.info("rm %s", item)
                 os.remove(item)
-    def root(self, testdir, real = None):
+    def root(self, testdir, real=None):
         if real: return "/"
         root_folder = os.path.join(testdir, "root")
         if not os.path.isdir(root_folder):
@@ -269,34 +268,34 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         values = json.loads(values)
         if not values or "NetworkSettings" not in values[0]:
             logg.critical(" docker inspect %s => %s ", name, values)
-        return values[0]["NetworkSettings"]["IPAddress"]    
+        return values[0]["NetworkSettings"]["IPAddress"]
     def local_image(self, image):
         """ attach local centos-repo / opensuse-repo to docker-start enviroment.
             Effectivly when it is required to 'docker start centos:x.y' then do
             'docker start centos-repo:x.y' before and extend the original to 
             'docker start --add-host mirror...:centos-repo centos:x.y'. """
-        if os.environ.get("NONLOCAL",""):
+        if os.environ.get("NONLOCAL", ""):
             return image
         add_hosts = self.start_mirror(image)
         if add_hosts:
             return "{add_hosts} {image}".format(**locals())
         return image
-    def local_addhosts(self, dockerfile, extras = None):
+    def local_addhosts(self, dockerfile, extras=None):
         image = ""
         for line in open(dockerfile):
             m = re.match('[Ff][Rr][Oo][Mm] *"([^"]*)"', line)
-            if m: 
+            if m:
                 image = m.group(1)
                 break
             m = re.match("[Ff][Rr][Oo][Mm] *(\w[^ ]*)", line)
-            if m: 
+            if m:
                 image = m.group(1).strip()
                 break
         logg.debug("--\n-- '%s' FROM '%s'", dockerfile, image)
         if image:
             return self.start_mirror(image, extras)
         return ""
-    def start_mirror(self, image, extras = None):
+    def start_mirror(self, image, extras=None):
         extras = extras or ""
         docker = _docker
         mirror = _mirror
@@ -338,7 +337,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         logg.info("...")
         logg.info("testname %s", testname)
         logg.info(" testdir %s", testdir)
-        logg.info("and root %s",  root)
+        logg.info("and root %s", root)
         target = "/usr/bin/systemctl"
         target_folder = os_path(root, os.path.dirname(target))
         os.makedirs(target_folder)
@@ -347,7 +346,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
     def test_102_systemctl_version(self):
-        systemctl = _systemctl_py 
+        systemctl = _systemctl_py
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -375,7 +374,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "--init"))
         self.assertTrue(greps(out, "for more information"))
         self.assertFalse(greps(out, "reload-or-try-restart"))
-        cmd = "{systemctl} help" 
+        cmd = "{systemctl} help"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
         self.assertEqual(end, 0)
@@ -395,10 +394,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-httpd"
-        dockerfile="centos7-httpd.dockerfile"
+        name = "centos7-httpd"
+        dockerfile = "centos7-httpd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -417,7 +416,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -446,10 +445,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos8-httpd"
-        dockerfile="centos8-httpd.dockerfile"
+        name = "centos8-httpd"
+        dockerfile = "centos8-httpd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -468,7 +467,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -490,10 +489,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
             THEN it fails."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-httpd"
-        dockerfile="centos7-httpd-not-user.dockerfile"
+        name = "centos7-httpd"
+        dockerfile = "centos7-httpd-not-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -535,10 +534,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-httpd"
-        dockerfile="centos8-httpd-not-user.dockerfile"
+        name = "centos7-httpd"
+        dockerfile = "centos8-httpd-not-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -581,10 +580,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-httpd"
-        dockerfile="centos7-httpd-user.dockerfile"
+        name = "centos7-httpd"
+        dockerfile = "centos7-httpd-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -612,7 +611,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -642,10 +641,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos8-httpd"
-        dockerfile="centos8-httpd-user.dockerfile"
+        name = "centos8-httpd"
+        dockerfile = "centos8-httpd-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -673,7 +672,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -780,7 +779,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu16-apache2.dockerfile"
+        dockerfile = "ubuntu16-apache2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -799,7 +798,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -828,7 +827,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu18-apache2.dockerfile"
+        dockerfile = "ubuntu18-apache2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -847,7 +846,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -875,10 +874,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="opensuse15-apache2"
-        dockerfile="opensuse15-apache2.dockerfile"
+        name = "opensuse15-apache2"
+        dockerfile = "opensuse15-apache2.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -897,7 +896,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -925,9 +924,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="opensuse15-nginx.dockerfile"
+        dockerfile = "opensuse15-nginx.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -946,7 +945,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep OK {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -974,17 +973,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-postgres"
-        dockerfile="centos7-postgres.dockerfile"
+        name = "centos7-postgres"
+        dockerfile = "centos7-postgres.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         password = self.newpassword()
-        testpass = "Test."+password
+        testpass = "Test." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -996,14 +995,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -1033,17 +1032,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos8-postgres"
-        dockerfile="centos8-postgres.dockerfile"
+        name = "centos8-postgres"
+        dockerfile = "centos8-postgres.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         password = self.newpassword()
-        testpass = "Test."+password
+        testpass = "Test." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -1055,14 +1054,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -1091,16 +1090,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="opensuse15-postgres.dockerfile"
+        dockerfile = "opensuse15-postgres.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         password = self.newpassword()
-        testpass = "Pass."+password
+        testpass = "Pass." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -1112,14 +1111,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -1148,16 +1147,16 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu18-postgres.dockerfile"
+        dockerfile = "ubuntu18-postgres.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
         psql = PSQL_TOOL
         password = self.newpassword()
-        testpass = "Test."+password
+        testpass = "Test." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -1169,14 +1168,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -1199,10 +1198,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-postgres"
-        dockerfile="centos7-postgres-user.dockerfile"
+        name = "centos7-postgres"
+        dockerfile = "centos7-postgres-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1210,7 +1209,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         runtime = RUNTIME
         password = self.newpassword()
-        testpass = "Pass."+password
+        testpass = "Pass." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -1222,15 +1221,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
-        uid="postgres"
+        # sh____(cmd.format(**locals()))
+        uid = "postgres"
         cmd = "{docker} exec {testname} id -u {uid}"
         out = output(cmd.format(**locals()))
         if out: uid = decodes(out).strip()
@@ -1269,10 +1268,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos8-postgres"
-        dockerfile="centos8-postgres-user.dockerfile"
+        name = "centos8-postgres"
+        dockerfile = "centos8-postgres-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1280,7 +1279,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         psql = PSQL_TOOL
         runtime = RUNTIME
         password = self.newpassword()
-        testpass = "Test."+password
+        testpass = "Test." + password
         # WHEN
         cmd = "{docker} build . -f {dockerfile} {addhosts} --build-arg PASSWORD={password} --build-arg TESTPASS={testpass} --tag {images}:{testname}"
         sh____(cmd.format(**locals()))
@@ -1292,15 +1291,15 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
-        uid="postgres"
+        # sh____(cmd.format(**locals()))
+        uid = "postgres"
         cmd = "{docker} exec {testname} id -u {uid}"
         out = output(cmd.format(**locals()))
         if out: uid = decodes(out).strip()
@@ -1336,20 +1335,20 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
         curl = _curl
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        name="centos7-postgres"
-        playbook="centos7-postgres-docker.yml"
+        name = "centos7-postgres"
+        playbook = "centos7-postgres-docker.yml"
         savename = docname(playbook)
         saveto = SAVETO
         images = saveto + "/postgres"
         psql = PSQL_TOOL
         runtime = RUNTIME
         password = self.newpassword()
-        testpass = "Pass."+password
+        testpass = "Pass." + password
         # WHEN
         users = "-e postgres_testuser=testuser_11 -e postgres_testpass={testpass} -e postgress_password={password}"
-        cmd = "ansible-playbook {playbook} "+users+" -e tagrepo={saveto} -e tagversion={testname} -v"
+        cmd = "ansible-playbook {playbook} " + users + " -e tagrepo={saveto} -e tagversion={testname} -v"
         sh____(cmd.format(**locals()))
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
@@ -1359,14 +1358,14 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "for i in 1 2 3 4 5 6 7 8 9; do echo -n \"[$i] \"; pg_isready -h {container} && break; sleep 2; done"
         sh____(cmd.format(**locals()))
         # THEN
-        login = "export PGUSER=testuser_11; export PGPASSWORD="+testpass
+        login = "export PGUSER=testuser_11; export PGPASSWORD=" + testpass
         query = "SELECT rolname FROM pg_roles"
         cmd = "{login}; {psql} -h {container} -d postgres -c '{query}' > {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep testuser_ok {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -1387,9 +1386,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos7-redis.dockerfile"
+        dockerfile = "centos7-redis.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1417,7 +1416,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1442,9 +1441,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos8-redis.dockerfile"
+        dockerfile = "centos8-redis.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1472,7 +1471,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1497,9 +1496,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos8-redis-user.dockerfile"
+        dockerfile = "centos8-redis-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1527,8 +1526,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
-        # 
+        # sh____(cmd.format(**locals()))
+        #
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -1557,9 +1556,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="opensuse15-redis.dockerfile"
+        dockerfile = "opensuse15-redis.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1587,7 +1586,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1612,10 +1611,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu18-redis.dockerfile"
-        addhosts = "" #FIXME# self.local_addhosts(dockerfile) 
+        dockerfile = "ubuntu18-redis.dockerfile"
+        addhosts = ""  # FIXME# self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
@@ -1642,7 +1641,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1667,10 +1666,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu18-redis-user.dockerfile"
-        addhosts = "" #FIXME# self.local_addhosts(dockerfile) 
+        dockerfile = "ubuntu18-redis-user.dockerfile"
+        addhosts = ""  # FIXME# self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
         images = IMAGES
@@ -1697,8 +1696,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
-        # 
+        # sh____(cmd.format(**locals()))
+        #
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -1728,9 +1727,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="opensuse15-redis-user.dockerfile"
+        dockerfile = "opensuse15-redis-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1759,7 +1758,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep PONG {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # USER
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
@@ -1789,9 +1788,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos8-mongod.dockerfile"
+        dockerfile = "centos8-mongod.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1821,7 +1820,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1846,9 +1845,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="opensuse15-mongod.dockerfile"
+        dockerfile = "opensuse15-mongod.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1878,7 +1877,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1903,9 +1902,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu18-mongod.dockerfile"
+        dockerfile = "ubuntu18-mongod.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -1935,7 +1934,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep 'MongoDB server version' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}-client"
         sh____(cmd.format(**locals()))
@@ -1960,11 +1959,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="centos7-lamp-stack"
-        dockerfile="centos7-lamp-stack.dockerfile"
+        name = "centos7-lamp-stack"
+        dockerfile = "centos7-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile, "--epel")
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2004,7 +2003,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2024,11 +2023,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="centos8-lamp-stack"
-        dockerfile="centos8-lamp-stack.dockerfile"
+        name = "centos8-lamp-stack"
+        dockerfile = "centos8-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile, "--epel")
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2069,7 +2068,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2087,11 +2086,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="opensuse14-lamp-stack"
-        dockerfile="opensuse14-lamp-stack.dockerfile"
+        name = "opensuse14-lamp-stack"
+        dockerfile = "opensuse14-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2123,7 +2122,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2141,11 +2140,11 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
         curl = _curl
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        name="opensuse15-lamp-stack"
-        dockerfile="opensuse15-lamp-stack.dockerfile"
+        name = "opensuse15-lamp-stack"
+        dockerfile = "opensuse15-lamp-stack.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2178,7 +2177,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<h1>.*>phpMyAdmin<' {testdir}/result.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2199,10 +2198,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python or _python2
         python3 = _python3
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        dockerfile="centos7-vault-http.dockerfile"
+        dockerfile = "centos7-vault-http.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2248,10 +2247,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         python = _python or _python2
         python3 = _python3
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        dockerfile="centos7-vault-https.dockerfile"
+        dockerfile = "centos7-vault-https.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2301,9 +2300,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos7-tomcat.dockerfile"
+        dockerfile = "centos7-tomcat.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2323,7 +2322,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2348,9 +2347,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos8-tomcat.dockerfile"
+        dockerfile = "centos8-tomcat.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2370,7 +2369,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2394,9 +2393,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos7-tomcat-user.dockerfile"
+        dockerfile = "centos7-tomcat-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2416,7 +2415,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} ps axu"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -2446,9 +2445,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos7-cntlm.dockerfile"
+        dockerfile = "centos7-cntlm.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2471,7 +2470,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2497,9 +2496,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos8-cntlm.dockerfile"
+        dockerfile = "centos8-cntlm.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2522,7 +2521,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2547,9 +2546,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos7-cntlm-user.dockerfile"
+        dockerfile = "centos7-cntlm-user.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2572,7 +2571,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2596,9 +2595,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos7-sshd.dockerfile"
+        dockerfile = "centos7-sshd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2616,7 +2615,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 2; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
@@ -2626,7 +2625,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2652,9 +2651,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python3
         if not python.endswith("python3"): self.skipTest("using python3 on centos:8")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="centos8-sshd.dockerfile"
+        dockerfile = "centos8-sshd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2678,18 +2677,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2714,9 +2713,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="opensuse15-sshd.dockerfile"
+        dockerfile = "opensuse15-sshd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2740,18 +2739,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2776,9 +2775,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python3
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        dockerfile="ubuntu18-sshd.dockerfile"
+        dockerfile = "ubuntu18-sshd.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2802,18 +2801,18 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         cmd = "{docker} exec {testname} systemctl is-system-running"
         sx____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.txt"
         sh____(cmd.format(**locals()))
-        allows="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+        allows = "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
         cmd = "sshpass -p {password} scp {allows} testuser@{container}:date.txt {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         cmd = "grep `TZ=UTC date -I` {testdir}/{testname}.date.2.txt"
         sh____(cmd.format(**locals()))
         #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
-        #sh____(cmd.format(**locals()))
+        # sh____(cmd.format(**locals()))
         # SAVE
         cmd = "{docker} stop {testname}"
         sh____(cmd.format(**locals()))
@@ -2829,17 +2828,17 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 
     def test_850_centos_elasticsearch_setup(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
-        ##### note that the test runs with a non-root 'ansible' user to reflect
-        ##### a real deployment scenario using ansible in the non-docker world.
+        # note that the test runs with a non-root 'ansible' user to reflect
+        # a real deployment scenario using ansible in the non-docker world.
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
         docker = _docker
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        setupfile="centos7-elasticsearch-setup.yml"
+        setupfile = "centos7-elasticsearch-setup.yml"
         savename = docname(setupfile)
         basename = CENTOS
         saveto = SAVETO
@@ -2885,7 +2884,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
-        systemctl_log = open(testdir+"/systemctl.log").read()
+        systemctl_log = open(testdir + "/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
@@ -2915,12 +2914,12 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         download(base_url, filename, into_dir)
         self.assertTrue(greps(os.listdir("Software/ElasticSearch"), filename))
         #
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
         root = self.root(testdir)
-        port=self.testport()
-        name="centos7-elasticsearch"
-        dockerfile="centos7-elasticsearch.dockerfile"
+        port = self.testport()
+        name = "centos7-elasticsearch"
+        dockerfile = "centos7-elasticsearch.dockerfile"
         addhosts = self.local_addhosts(dockerfile)
         savename = docname(dockerfile)
         saveto = SAVETO
@@ -2953,7 +2952,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # CHECK
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
-        systemctl_log = open(testdir+"/systemctl.log").read()
+        systemctl_log = open(testdir + "/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
@@ -2977,10 +2976,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        playbook="centos7-elasticsearch-image.yml"
-        basename = CENTOS # "centos:7.3.1611"
+        playbook = "centos7-elasticsearch-image.yml"
+        basename = CENTOS  # "centos:7.3.1611"
         tagrepo = SAVETO
         tagname = "elasticsearch"
         #
@@ -3011,7 +3010,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
-        systemctl_log = open(testdir+"/systemctl.log").read()
+        systemctl_log = open(testdir + "/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
@@ -3029,9 +3028,9 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        playbook="centos7-elasticsearch-deploy.yml"
+        playbook = "centos7-elasticsearch-deploy.yml"
         savename = docname(playbook)
         basename = CENTOS
         saveto = SAVETO
@@ -3071,7 +3070,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
-        systemctl_log = open(testdir+"/systemctl.log").read()
+        systemctl_log = open(testdir + "/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
@@ -3095,10 +3094,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        playbook="centos7-elasticsearch-docker.yml"
-        basename = CENTOS # "centos:7.3.1611"
+        playbook = "centos7-elasticsearch-docker.yml"
+        basename = CENTOS  # "centos:7.3.1611"
         tagrepo = SAVETO
         tagname = "elasticsearch"
         #
@@ -3129,7 +3128,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
-        systemctl_log = open(testdir+"/systemctl.log").read()
+        systemctl_log = open(testdir + "/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
@@ -3147,10 +3146,10 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         curl = _curl
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
-        testname=self.testname()
+        testname = self.testname()
         testdir = self.testdir()
-        playbook="centos7-elasticsearch.docker.yml"
-        basename = CENTOS # "centos:7.3.1611"
+        playbook = "centos7-elasticsearch.docker.yml"
+        basename = CENTOS  # "centos:7.3.1611"
         tagrepo = SAVETO
         tagname = "elasticsearch"
         #
@@ -3181,7 +3180,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
         sh____(cmd.format(**locals()))
         # CHECK
-        systemctl_log = open(testdir+"/systemctl.log").read()
+        systemctl_log = open(testdir + "/systemctl.log").read()
         self.assertEqual(len(greps(systemctl_log, " ERROR ")), 0)
         self.assertTrue(greps(systemctl_log, "simple started PID"))
         self.assertTrue(greps(systemctl_log, "stop kill PID"))
@@ -3195,31 +3194,31 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
 if __name__ == "__main__":
     from optparse import OptionParser
     _o = OptionParser("%prog [options] test*",
-       epilog=__doc__.strip().split("\n")[0])
-    _o.add_option("-v","--verbose", action="count", default=0,
-       help="increase logging level [%default]")
+                      epilog=__doc__.strip().split("\n")[0])
+    _o.add_option("-v", "--verbose", action="count", default=0,
+                  help="increase logging level [%default]")
     _o.add_option("--with", metavar="FILE", dest="systemctl_py", default=_systemctl_py,
-       help="systemctl.py file to be tested (%default)")
+                  help="systemctl.py file to be tested (%default)")
     _o.add_option("--python3", metavar="EXE", default=_python3,
-       help="use another python2 execution engine [%default]")
+                  help="use another python2 execution engine [%default]")
     _o.add_option("--python2", metavar="EXE", default=_python2,
-       help="use another python execution engine [%default]")
-    _o.add_option("-p","--python", metavar="EXE", default=_python,
-       help="override the python execution engine [%default]")
-    _o.add_option("-7","--epel7", action="store_true", default=_epel7,
-       help="enable testbuilds requiring epel7 [%default]")
-    _o.add_option("-m","--mirror", metavar="EXE", default=_mirror,
-       help="override the docker_mirror.py [%default]")
-    _o.add_option("-D","--docker", metavar="EXE", default=_docker,
-       help="override docker exe or podman [%default]")
-    _o.add_option("-l","--logfile", metavar="FILE", default="",
-       help="additionally save the output log to a file [%default]")
-    _o.add_option("-P","--password", metavar="PASSWORD", default="",
-       help="use a fixed password for examples with auth [%default]")
+                  help="use another python execution engine [%default]")
+    _o.add_option("-p", "--python", metavar="EXE", default=_python,
+                  help="override the python execution engine [%default]")
+    _o.add_option("-7", "--epel7", action="store_true", default=_epel7,
+                  help="enable testbuilds requiring epel7 [%default]")
+    _o.add_option("-m", "--mirror", metavar="EXE", default=_mirror,
+                  help="override the docker_mirror.py [%default]")
+    _o.add_option("-D", "--docker", metavar="EXE", default=_docker,
+                  help="override docker exe or podman [%default]")
+    _o.add_option("-l", "--logfile", metavar="FILE", default="",
+                  help="additionally save the output log to a file [%default]")
+    _o.add_option("-P", "--password", metavar="PASSWORD", default="",
+                  help="use a fixed password for examples with auth [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
-       help="capture results as a junit xml file [%default]")
+                  help="capture results as a junit xml file [%default]")
     opt, args = _o.parse_args()
-    logging.basicConfig(level = logging.WARNING - opt.verbose * 5)
+    logging.basicConfig(level=logging.WARNING - opt.verbose * 5)
     #
     _systemctl_py = opt.systemctl_py
     _python = opt.python
@@ -3233,7 +3232,7 @@ if __name__ == "__main__":
     logfile = None
     if opt.logfile:
         if os.path.exists(opt.logfile):
-           os.remove(opt.logfile)
+            os.remove(opt.logfile)
         logfile = logging.FileHandler(opt.logfile)
         logfile.setFormatter(logging.Formatter("%(levelname)s:%(relativeCreated)d:%(message)s"))
         logging.getLogger().addHandler(logfile)
@@ -3241,13 +3240,13 @@ if __name__ == "__main__":
     xmlresults = None
     if opt.xmlresults:
         if os.path.exists(opt.xmlresults):
-           os.remove(opt.xmlresults)
+            os.remove(opt.xmlresults)
         xmlresults = open(opt.xmlresults, "w")
         logg.info("xml results into %s", opt.xmlresults)
     #
     # unittest.main()
     suite = unittest.TestSuite()
-    if not args: args = [ "test_*" ]
+    if not args: args = ["test_*"]
     for arg in args:
         for classname in sorted(globals()):
             if not classname.endswith("Test"):
