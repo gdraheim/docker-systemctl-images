@@ -32,6 +32,7 @@ if sys.version[0] == '3':
     xrange = range
 
 logg = logging.getLogger("TESTING")
+_epel7 = False
 _python2 = "/usr/bin/python"
 _python3 = "/usr/bin/python3"
 _python = ""
@@ -46,6 +47,7 @@ UBUNTU = "ubuntu:14.04"
 OPENSUSE = "opensuse/leap:15.0"
 
 _curl = "curl"
+_curl_timeout4 = "--max-time 4"
 _docker = "docker"
 DOCKER_SOCKET = "/var/run/docker.sock"
 PSQL_TOOL = "/usr/bin/psql"
@@ -294,7 +296,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if image:
             return self.start_mirror(image, extras)
         return ""
-    def start_mirror(self, image, extras):
+    def start_mirror(self, image, extras = None):
         extras = extras or ""
         docker = _docker
         mirror = _mirror
@@ -1953,6 +1955,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_531_centos7_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not _epel7: self.skipTest("epel7 is dead (use --epel7 to enable test)")
         docker = _docker
         curl = _curl
         python = _python or _python2
@@ -2194,6 +2197,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python2
+        python3 = _python3
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
@@ -2218,7 +2222,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         container = self.ip_container(testname)
         cmd = "{docker} exec {testname} /srv/vault.py write secret/mysecret value={password}"
         sh____(cmd.format(**locals()))
-        cmd = "{python} {vault} -address=http://{container}:{port} read secret/mysecret"
+        cmd = "{python3} {vault} -address=http://{container}:{port} read secret/mysecret"
         sh____(cmd.format(**locals()))
         cmd = "{curl} -o {testdir}/result.txt http://{container}:{port}/v1/secret/mysecret"
         sh____(cmd.format(**locals()))
@@ -2242,6 +2246,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         docker = _docker
         curl = _curl
         python = _python or _python2
+        python3 = _python3
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
         testdir = self.testdir()
@@ -2267,7 +2272,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         container = self.ip_container(testname)
         cmd = "{docker} exec {testname} /srv/vault.py write secret/mysecret value={password}"
         sh____(cmd.format(**locals()))
-        cmd = "{python} {vault} -tls-skip-verify=yes -address=https://{container}:{port} read secret/mysecret"
+        cmd = "{python3} {vault} -tls-skip-verify=yes -address=https://{container}:{port} read secret/mysecret"
         sh____(cmd.format(**locals()))
         cmd = "curl -k -o {testdir}/result.txt -- https://{container}:{port}/v1/secret/mysecret"
         sh____(cmd.format(**locals()))
@@ -2438,6 +2443,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
+        max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2459,8 +2465,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "http_proxy={container}:3128 {curl} {max4} -o {testdir}/{testname}.txt http://www.google.com"
+        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} {max4} -o {testdir}/{testname}.txt http://www.google.com"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2488,6 +2494,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
+        max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2509,8 +2516,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "http_proxy={container}:3128 {curl} {max4} -o {testdir}/{testname}.txt http://www.google.com"
+        # cmd = "sleep 5; http_proxy=127.0.0.1:3128 {curl} {max4} -o {testdir}/{testname}.txt http://www.google.com"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -2537,6 +2544,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         if not os.path.exists(PSQL_TOOL): self.skipTest("postgres tools missing on host")
         docker = _docker
         curl = _curl
+        max4 = _curl_timeout4
         python = _python or _python2
         if python.endswith("python3"): self.skipTest("no python3 on centos:7")
         testname=self.testname()
@@ -2558,8 +2566,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         # THEN
         cmd = "sleep 5; {docker} exec {testname} ps axu"
         sx____(cmd.format(**locals()))
-        cmd = "http_proxy={container}:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
-        # cmd = "http_proxy=127.0.0.1:3128 {curl} -o {testdir}/{testname}.txt http://www.google.com --timeout=4"
+        cmd = "http_proxy={container}:3128 {curl} {max4} -o {testdir}/{testname}.txt http://www.google.com"
+        # cmd = "http_proxy=127.0.0.1:3128 {curl} {max4} -o {testdir}/{testname}.txt http://www.google.com"
         sh____(cmd.format(**locals()))
         cmd = "grep '<img alt=.Google.' {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
@@ -3198,6 +3206,8 @@ if __name__ == "__main__":
        help="use another python execution engine [%default]")
     _o.add_option("-p","--python", metavar="EXE", default=_python,
        help="override the python execution engine [%default]")
+    _o.add_option("-7","--epel7", action="store_true", default=_epel7,
+       help="enable testbuilds requiring epel7 [%default]")
     _o.add_option("-m","--mirror", metavar="EXE", default=_mirror,
        help="override the docker_mirror.py [%default]")
     _o.add_option("-D","--docker", metavar="EXE", default=_docker,
@@ -3215,6 +3225,7 @@ if __name__ == "__main__":
     _python = opt.python
     _python2 = opt.python2
     _python3 = opt.python3
+    _epel7 = opt.epel7
     _mirror = opt.mirror
     _docker = opt.docker
     _password = opt.password
