@@ -20,7 +20,7 @@
       import_role: 
          name: "setup-systemctl-replacement"
       vars:
-         assume_docker: yes
+         deployment_docker: yes
     - name: setup the container
       delegate_to: '{{ container1 }}'
       import_role: 
@@ -38,3 +38,9 @@
       copy: 
         dest: "/VERSION"
         content: "{{ software_version.stdout | trim }}"
+    - name: setup systemctl.py again
+      delegate_to: '{{ container1 }}'
+      import_role: 
+         name: "setup-systemctl-replacement"
+      vars:
+         deployment_docker: yes

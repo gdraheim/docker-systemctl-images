@@ -56,7 +56,7 @@
       import_role:
          name: "setup-systemctl-replacement"
       vars:
-         assume_docker: yes
+         deployment_docker: yes
     - name: setup the container
       delegate_to: elasticsearch-host
       import_role: 

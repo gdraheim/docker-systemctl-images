@@ -34,7 +34,7 @@
       import_role: 
          name: "deployment-systemctl-replacement"
       vars:
-         assume_docker: yes
+         deployment_docker: yes
     - name: setup the container
       delegate_to: '{{ container1 }}'
       import_role: 
