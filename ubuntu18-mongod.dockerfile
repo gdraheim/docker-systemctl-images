@@ -1,7 +1,7 @@
 FROM "ubuntu:18.04"
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4476"
+      __version__="1.5.7106"
 EXPOSE 27017
 
 RUN apt-get update

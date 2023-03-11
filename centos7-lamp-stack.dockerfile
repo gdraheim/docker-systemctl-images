@@ -1,7 +1,7 @@
 FROM centos:7.9.2009
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.7106"
 
 ENV WEB_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
 ENV INC_CONF="/etc/phpMyAdmin/config.inc.php"

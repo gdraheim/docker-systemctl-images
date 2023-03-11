@@ -1,7 +1,7 @@
 FROM centos:7.9.2009
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.7106"
 EXPOSE 8200
 
 COPY files/vault/vault.py /srv/vault.py

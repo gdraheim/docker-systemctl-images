@@ -1,7 +1,7 @@
 FROM opensuse/leap:15.1
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.7106"
 EXPOSE 80
 
 RUN zypper install -r repo-oss -y python3

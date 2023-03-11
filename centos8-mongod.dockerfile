@@ -1,7 +1,7 @@
 FROM centos:8.1.1911
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.7106"
 EXPOSE 27017
 ARG MONGODB=4.4
 

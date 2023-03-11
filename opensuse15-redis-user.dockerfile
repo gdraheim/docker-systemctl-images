@@ -1,7 +1,7 @@
 FROM opensuse/leap:15.1
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
-      __version__="1.5.4264"
+      __version__="1.5.7106"
 ARG PASSWORD=P@ssw0rd.7702d0fa8c57c1a2aa87a6758f6c326d7de5
 EXPOSE 6379
 
