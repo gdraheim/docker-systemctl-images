@@ -50,3 +50,16 @@ ce centos:   ; ./testbuilds.py make_centos
 
 clean:
 	- rm -rf tmp/tmp.test_*
+
+############################ CHECK
+AUTOPEP8=autopep8
+%.py.pep8: %.py
+	$(AUTOPEP8) $(@:.pep8=) --in-place
+	git --no-pager diff $(@:.pep8=)
+
+pep style: 
+	$(MAKE) testbuilds.py.pep8
+
+############################ XTRA
+
+-include Makefile.qtest
