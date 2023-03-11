@@ -24,6 +24,10 @@ try:
     import BaseHTTPServer
 except:
     import http.server as BaseHTTPServer # Python 3.0
+try:
+    import urllib2
+except:
+    import urllib.request as urllib2 # Python 3.0
 
 logg = logging.getLogger("vault")
 
@@ -187,7 +191,6 @@ class Vault:
         if "://" not in addr:
             addr = "https://"+addr
         key_url = addr+"/v1/"+key
-        import urllib2
         req = urllib2.Request(key_url)
         if token:
             req.add_header("X-Vault-Token", token)
