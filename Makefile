@@ -35,8 +35,8 @@ DJ docker-jenkins: ; ./testbuilds.py test_90*
 
 check: ;  ./testbuilds.py -vv 
 check3: ; ./testbuilds.py -vv "test_[178]"
-test_%: ; ./testbuilds.py $@ -vv -P `date +Pass.%d.%m`
-real_%: ; ./testbuilds.py $@ -vv -P `date +Pass.%d.%m`
+test_%: ; ./testbuilds.py $@ -vv -P `date +Pass.%d.%m` $X
+real_%: ; ./testbuilds.py $@ -vv -P `date +Pass.%d.%m` $X
 
 3: tmp/systemctl3.py
 tmp/systemctl.py tmp/systemctl3.py : files/docker/systemctl.py
