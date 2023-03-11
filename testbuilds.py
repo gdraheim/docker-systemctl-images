@@ -33,6 +33,7 @@ if sys.version[0] == '3':
 
 logg = logging.getLogger("TESTING")
 _epel7 = False
+_opensuse14 = False
 _python2 = "/usr/bin/python"
 _python3 = "/usr/bin/python3"
 _python = ""
@@ -2084,6 +2085,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     def test_540_opensuse14_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        if not _opensuse14: self.skipTest("Opensuse 42.x is dead")
         docker = _docker
         curl = _curl
         testname = self.testname()
@@ -2326,7 +2328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
                 txt = open(filename).read()
                 if txt.strip(): break
             time.sleep(1)
-        cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample"
+        cmd = "{curl} -o {testdir}/{testname}.txt http://{container}:8080/sample/"
         sh____(cmd.format(**locals()))
         cmd = "grep Hello {testdir}/{testname}.txt"
         sh____(cmd.format(**locals()))
