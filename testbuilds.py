@@ -35,7 +35,7 @@ logg = logging.getLogger("TESTING")
 _python2 = "/usr/bin/python"
 _python3 = "/usr/bin/python3"
 _python = ""
-_systemctl_py = "files/docker/systemctl.py"
+_systemctl_py = "files/docker/systemctl3.py"
 _top_recent = "ps -eo etime,pid,ppid,args --sort etime,pid | grep '^ *0[0123]:[^ :]* ' | grep -v -e ' ps ' -e ' grep ' -e 'kworker/'"
 _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
@@ -711,7 +711,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         basename = "ubuntu:16.04"
         savename = "ubuntu-apache2-test"
         image = self.local_image(basename)
-        python_base = os.path.basename(_python)
+        python_base = os.path.basename(_python or _python3)
         systemctl_py = _systemctl_py
         logg.info("%s:%s %s", testname, port, basename)
         #
