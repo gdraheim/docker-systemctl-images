@@ -1,5 +1,18 @@
-# Copyright (C) 2017 Guido U. Draheim, All Rights Reserved
+# Copyright (C) 2023 Guido U. Draheim, All Rights Reserved
 
+- name: current user - workaround Ansible 2.9
+  shell: id -un
+  become: false
+  register: current_whoami
+  when: ansible_user is not defined
+- name: current_user - workaround Ansible 2.9
+  set_fact:
+     current_user: "{{current_whoami.stdout}}"
+  when: ansible_user is not defined
+- name: current_user - ansible_user
+  set_fact:
+     current_user: "{{ansible_user}}"
+  when: ansible_user is defined
 - name: upload check
   local_action: 'stat path="{{elasticsearch_software}}/{{elasticsearch_rpm}}"'
   register: have_download
@@ -7,7 +20,7 @@
   file: 
     path: "{{elasticsearch_software}}" 
     state: "directory" 
-    owner: "{{ansible_user}}"
+    owner: "{{current_user}}"
   become: yes
 - name: upload rpm
   copy: 
