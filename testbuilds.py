@@ -3329,6 +3329,8 @@ if __name__ == "__main__":
                   help="additionally save the output log to a file [%default]")
     _o.add_option("-P", "--password", metavar="PASSWORD", default="",
                   help="use a fixed password for examples with auth [%default]")
+    _o.add_option("--failfast", action="store_true", default=False,
+                  help="Stop the test run on the first error or failure. [%default]")
     _o.add_option("--xmlresults", metavar="FILE", default=None,
                   help="capture results as a junit xml file [%default]")
     opt, args = _o.parse_args()
@@ -3379,7 +3381,7 @@ if __name__ == "__main__":
             Runner(xmlresults).run(suite)
         else:
             Runner = unittest.TextTestRunner
-            Runner(verbosity=opt.verbose).run(suite)
+            Runner(verbosity=opt.verbose, failfast=opt.failfast).run(suite)
     else:
         Runner = unittest.TextTestRunner
         if xmlresults:
