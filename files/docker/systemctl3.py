@@ -22,7 +22,7 @@ import re
 from types import GeneratorType
 
 __copyright__ = "(C) 2016-2023 Guido U. Draheim, licensed under the EUPL"
-__version__ = "1.5.7106"
+__version__ = "1.5.7417"
 
 # |
 # |
@@ -96,34 +96,38 @@ _show_all = False
 _user_mode = False
 
 # common default paths
-_system_folder1 = "/etc/systemd/system"
-_system_folder2 = "/run/systemd/system"
-_system_folder3 = "/var/run/systemd/system"
-_system_folder4 = "/usr/local/lib/systemd/system"
-_system_folder5 = "/usr/lib/systemd/system"
-_system_folder6 = "/lib/systemd/system"
-_system_folderX = None
-_user_folder1 = "{XDG_CONFIG_HOME}/systemd/user"
-_user_folder2 = "/etc/systemd/user"
-_user_folder3 = "{XDG_RUNTIME_DIR}/systemd/user"
-_user_folder4 = "/run/systemd/user"
-_user_folder5 = "/var/run/systemd/user"
-_user_folder6 = "{XDG_DATA_HOME}/systemd/user"
-_user_folder7 = "/usr/local/lib/systemd/user"
-_user_folder8 = "/usr/lib/systemd/user"
-_user_folder9 = "/lib/systemd/user"
-_user_folderX = None
-_init_folder1 = "/etc/init.d"
-_init_folder2 = "/run/init.d"
-_init_folder3 = "/var/run/init.d"
-_init_folderX = None
-_preset_folder1 = "/etc/systemd/system-preset"
-_preset_folder2 = "/run/systemd/system-preset"
-_preset_folder3 = "/var/run/systemd/system-preset"
-_preset_folder4 = "/usr/local/lib/systemd/system-preset"
-_preset_folder5 = "/usr/lib/systemd/system-preset"
-_preset_folder6 = "/lib/systemd/system-preset"
-_preset_folderX = None
+_system_folders = [
+    "/etc/systemd/system",
+    "/run/systemd/system",
+    "/var/run/systemd/system",
+    "/usr/local/lib/systemd/system",
+    "/usr/lib/systemd/system",
+    "/lib/systemd/system",
+]
+_user_folders = [
+    "{XDG_CONFIG_HOME}/systemd/user",
+    "/etc/systemd/user",
+    "{XDG_RUNTIME_DIR}/systemd/user",
+    "/run/systemd/user",
+    "/var/run/systemd/user",
+    "{XDG_DATA_HOME}/systemd/user",
+    "/usr/local/lib/systemd/user",
+    "/usr/lib/systemd/user",
+    "/lib/systemd/user",
+]
+_init_folders = [
+    "/etc/init.d",
+    "/run/init.d",
+    "/var/run/init.d",
+]
+_preset_folders = [
+    "/etc/systemd/system-preset",
+    "/run/systemd/system-preset",
+    "/var/run/systemd/system-preset",
+    "/usr/local/lib/systemd/system-preset",
+    "/usr/lib/systemd/system-preset",
+    "/lib/systemd/system-preset",
+]
 
 # standard paths
 _dev_null = "/dev/null"
@@ -1362,49 +1366,29 @@ class Systemctl:
         for path in SYSTEMD_PRESET_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_PRESET_PATH.endswith(":"):
-            if _preset_folder1: yield _preset_folder1
-            if _preset_folder2: yield _preset_folder2
-            if _preset_folder3: yield _preset_folder3
-            if _preset_folder4: yield _preset_folder4
-            if _preset_folder5: yield _preset_folder5
-            if _preset_folder6: yield _preset_folder6
-            if _preset_folderX: yield _preset_folderX
+            for p in _preset_folders:
+                yield expand_path(p.strip())
     def init_folders(self):
         SYSTEMD_SYSVINIT_PATH = self.get_SYSTEMD_SYSVINIT_PATH()
         for path in SYSTEMD_SYSVINIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_SYSVINIT_PATH.endswith(":"):
-            if _init_folder1: yield _init_folder1
-            if _init_folder2: yield _init_folder2
-            if _init_folder3: yield _init_folder3
-            if _init_folderX: yield _init_folderX
+            for p in _init_folders:
+                yield expand_path(p.strip())
     def user_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            if _user_folder1: yield expand_path(_user_folder1)
-            if _user_folder2: yield expand_path(_user_folder2)
-            if _user_folder3: yield expand_path(_user_folder3)
-            if _user_folder4: yield expand_path(_user_folder4)
-            if _user_folder5: yield expand_path(_user_folder5)
-            if _user_folder6: yield expand_path(_user_folder6)
-            if _user_folder7: yield expand_path(_user_folder7)
-            if _user_folder8: yield expand_path(_user_folder8)
-            if _user_folder9: yield expand_path(_user_folder9)
-            if _user_folderX: yield expand_path(_user_folderX)
+            for p in _user_folders:
+                yield expand_path(p.strip())
     def system_folders(self):
         SYSTEMD_UNIT_PATH = self.get_SYSTEMD_UNIT_PATH()
         for path in SYSTEMD_UNIT_PATH.split(":"):
             if path.strip(): yield expand_path(path.strip())
         if SYSTEMD_UNIT_PATH.endswith(":"):
-            if _system_folder1: yield _system_folder1
-            if _system_folder2: yield _system_folder2
-            if _system_folder3: yield _system_folder3
-            if _system_folder4: yield _system_folder4
-            if _system_folder5: yield _system_folder5
-            if _system_folder6: yield _system_folder6
-            if _system_folderX: yield _system_folderX
+            for p in _system_folders:
+                yield expand_path(p.strip())
     def get_SYSTEMD_UNIT_PATH(self):
         if self._SYSTEMD_UNIT_PATH is None:
             self._SYSTEMD_UNIT_PATH = os.environ.get("SYSTEMD_UNIT_PATH", ":")
@@ -2954,7 +2938,7 @@ class Systemctl:
         returncode = 0
         service_result = "success"
         if True:
-            if runs in ["simple", "forking", "notify", "idle"]:
+            if runs in ["simple", "exec", "forking", "notify", "idle"]:
                 env["MAINPID"] = strE(self.read_mainpid_from(conf))
             for cmd in conf.getlist(Service, "ExecStartPre", []):
                 exe, newcmd = self.exec_newcmd(cmd, env, conf)
@@ -2997,7 +2981,7 @@ class Systemctl:
                 self.set_status_from(conf, "ExecMainCode", strE(returncode))
                 active = returncode and "failed" or "active"
                 self.write_status_from(conf, AS=active)
-        elif runs in ["simple", "idle"]:
+        elif runs in ["simple", "exec", "idle"]:
             status_file = self.get_status_file_from(conf)
             pid = self.read_mainpid_from(conf)
             if self.is_active_pid(pid):
@@ -3666,7 +3650,7 @@ class Systemctl:
                 self.do_kill_unit_from(conf)
                 self.clean_pid_file_from(conf)
                 self.clean_status_from(conf) # "inactive"
-        elif runs in ["simple", "notify", "idle"]:
+        elif runs in ["simple", "exec", "notify", "idle"]:
             status_file = self.get_status_file_from(conf)
             size = os.path.exists(status_file) and os.path.getsize(status_file)
             logg.info("STATUS %s %s", status_file, size)
@@ -3880,7 +3864,7 @@ class Systemctl:
                     return True
         service_directories = self.env_service_directories(conf)
         env.update(service_directories)
-        if runs in ["simple", "notify", "forking", "idle"]:
+        if runs in ["simple", "exec", "notify", "forking", "idle"]:
             if not self.is_active_from(conf):
                 logg.info("no reload on inactive service %s", conf.name())
                 return True
@@ -4757,6 +4741,8 @@ class Systemctl:
         for unit in units:
             if not self.disable_unit(unit):
                 done = False
+            elif self._now:
+                self.stop_unit(unit)
         return done
     def disable_unit(self, unit):
         conf = self.load_unit_conf(unit)
@@ -5226,7 +5212,7 @@ class Systemctl:
         usedExecStart = []
         usedExecStop = []
         usedExecReload = []
-        if haveType not in ["simple", "forking", "notify", "oneshot", "dbus", "idle"]:
+        if haveType not in ["simple", "exec", "forking", "notify", "oneshot", "dbus", "idle"]:
             logg.error(" %s: Failed to parse service type, ignoring: %s", unit, haveType)
             errors += 100
         for line in haveExecStart:
@@ -5259,7 +5245,7 @@ class Systemctl:
                 logg.info("%s: %s exe = %s", unit, section, exe)
                 errors += 1
             usedExecReload.append(line)
-        if haveType in ["simple", "notify", "forking", "idle"]:
+        if haveType in ["simple", "exec", "notify", "forking", "idle"]:
             if not usedExecStart and not usedExecStop:
                 logg.error(" %s: %s lacks both ExecStart and ExecStop= setting. Refusing.", unit, section)
                 errors += 101
@@ -5487,7 +5473,7 @@ class Systemctl:
     igno_centos = ["netconsole", "network"]
     igno_opensuse = ["raw", "pppoe", "*.local", "boot.*", "rpmconf*", "postfix*"]
     igno_ubuntu = ["mount*", "umount*", "ondemand", "*.local"]
-    igno_always = ["network*", "dbus*", "systemd-*", "kdump*"]
+    igno_always = ["network*", "dbus*", "systemd-*", "kdump*", "kmod*"]
     igno_always += ["purge-kernels.service", "after-local.service", "dm-event.*"] # as on opensuse
     igno_targets = ["remote-fs.target"]
     def _ignored_unit(self, unit, ignore_list):
@@ -6209,7 +6195,8 @@ class Systemctl:
             break
     def is_running_unit_from(self, conf):
         status_file = self.get_status_file_from(conf)
-        return self.getsize(status_file) > 0
+        pid_file = self.pid_file_from(conf)
+        return self.getsize(status_file) > 0 or self.getsize(pid_file) > 0
     def is_running_unit(self, unit):
         conf = self.get_unit_conf(unit)
         return self.is_running_unit_from(conf)
@@ -6697,6 +6684,8 @@ if __name__ == "__main__":
                   help="Print unit dependencies as a list instead of a tree (ignored)")
     _o.add_option("--no-pager", action="store_true",
                   help="Do not pipe output into pager (mostly ignored)")
+    _o.add_option("--no-warn", action="store_true",
+                  help="Do not generate certain warnings (ignored)")
     #
     _o.add_option("-c", "--config", metavar="NAME=VAL", action="append", default=[],
                   help="..override internal variables (InitLoopSleep,SysInitTarget) {%default}")
