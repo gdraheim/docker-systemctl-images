@@ -331,7 +331,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
     #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     #
-    def test_101_systemctl_testfile(self):
+    def test_1001_systemctl_testfile(self):
         """ the systemctl.py file to be tested does exist """
         testname = self.testname()
         testdir = self.testdir()
@@ -347,7 +347,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         shutil.copy(_systemctl_py, target_systemctl)
         self.assertTrue(os.path.isfile(target_systemctl))
         self.rm_testdir()
-    def test_102_systemctl_version(self):
+    def test_1002_systemctl_version(self):
         systemctl = _systemctl_py
         cmd = "{systemctl} --version"
         out, end = output2(cmd.format(**locals()))
@@ -356,7 +356,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, "systemd 219"))
         self.assertTrue(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def real_102_systemctl_version(self):
+    def real_1002_systemctl_version(self):
         cmd = "systemctl --version"
         out, end = output2(cmd.format(**locals()))
         logg.info(" %s =>%s\n%s", cmd, end, out)
@@ -364,7 +364,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertTrue(greps(out, r"systemd [234]\d\d"))
         self.assertFalse(greps(out, "via systemctl.py"))
         self.assertTrue(greps(out, "[+]SYSVINIT"))
-    def test_103_systemctl_help(self):
+    def test_1003_systemctl_help(self):
         """ the '--help' option and 'help' command do work """
         systemctl = _systemctl_py
         cmd = "{systemctl} --help"
@@ -382,7 +382,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.assertEqual(end, 0)
         self.assertFalse(greps(out, "--verbose"))
         self.assertTrue(greps(out, "reload-or-try-restart"))
-    def test_201_centos7_httpd_dockerfile(self):
+    def test_2007_centos7_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -431,7 +431,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_202_centos8_httpd_dockerfile(self):
+    def test_2008_centos8_httpd_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -482,7 +482,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_205_centos7_httpd_not_user_dockerfile(self):
+    def test_2047_centos7_httpd_not_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -525,7 +525,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_206_centos8_httpd_not_user_dockerfile(self):
+    def test_2048_centos8_httpd_not_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -570,7 +570,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_207_centos7_httpd_user_dockerfile(self):
+    def test_2057_centos7_httpd_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -631,7 +631,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_208_centos8_httpd_user_dockerfile(self):
+    def test_2058_centos8_httpd_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -692,7 +692,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_214_ubuntu_apache2(self):
+    def test_2114_ubuntu_apache2(self):
         """ WHEN using a systemd enabled Ubuntu as the base image
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -765,7 +765,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_216_ubuntu16_apache2(self):
+    def test_2116_ubuntu16_apache2(self):
         """ WHEN using a dockerfile for systemd enabled Ubuntu 16 with python2
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -813,7 +813,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_218_ubuntu18_apache2(self):
+    def test_2118_ubuntu18_apache2(self):
         """ WHEN using a dockerfile for systemd enabled Ubuntu 18 with python3
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -861,7 +861,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_225_opensuse15_apache2_dockerfile(self):
+    def test_2215_opensuse15_apache2_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an Apache HTTP service 
                  being installed and enabled.
@@ -911,7 +911,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_235_opensuse15_nginx_dockerfile(self):
+    def test_2315_opensuse15_nginx_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an NGINX HTTP service 
                  being installed and enabled.
@@ -960,7 +960,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_307_centos7_postgres_dockerfile(self):
+    def test_3007_centos7_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1017,7 +1017,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_308_centos8_postgres_dockerfile(self):
+    def test_3008_centos8_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1076,7 +1076,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_315_opensuse15_postgres_dockerfile(self):
+    def test_3215_opensuse15_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1133,7 +1133,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_318_ubuntu18_postgres_dockerfile(self):
+    def test_3318_ubuntu18_postgres_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 16.04 and python3, 
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1190,7 +1190,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_337_centos7_postgres_user_dockerfile(self):
+    def test_3457_centos7_postgres_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2,
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1258,7 +1258,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_338_centos8_postgres_user_dockerfile(self):
+    def test_3458_centos8_postgres_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8 and python3,
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled.
@@ -1328,7 +1328,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_339_centos7_postgres_playbook(self):
+    def test_3487_centos7_postgres_playbook(self):
         """ WHEN using a playbook for systemd-enabled CentOS 7 and python2,
             THEN we can create an image with an PostgreSql DB service 
                  being installed and enabled."""
@@ -1380,7 +1380,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_347_centos7_redis_dockerfile(self):
+    def test_3507_centos7_redis_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Centos7 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1435,7 +1435,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_348_centos8_redis_dockerfile(self):
+    def test_3508_centos8_redis_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1490,7 +1490,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_349_centos8_redis_user_dockerfile(self):
+    def test_3558_centos8_redis_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Centos8 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1550,7 +1550,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_355_opensuse15_redis_dockerfile(self):
+    def test_3715_opensuse15_redis_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1605,7 +1605,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_358_ubuntu18_redis_dockerfile(self):
+    def test_3718_ubuntu18_redis_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1660,7 +1660,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_359_ubuntu18_redis_user_dockerfile(self):
+    def test_3768_ubuntu18_redis_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1720,7 +1720,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_365_opensuse15_redis_user_dockerfile(self):
+    def test_3765_opensuse15_redis_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and redis, 
             THEN check that redis replies to 'ping' with a 'PONG' 
             AND that AUTH works along with a USER process"""
@@ -1782,7 +1782,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_382_centos8_mongod_dockerfile(self):
+    def test_3808_centos8_mongod_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled centos8 and mongod, 
             check that mongo can reply witha  hostInfo."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1839,7 +1839,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_385_opensuse15_mongod_dockerfile(self):
+    def test_3815_opensuse15_mongod_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Opensuse15 and mongod, 
             check that mongo can reply witha  hostInfo."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1896,7 +1896,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_388_ubuntu18_mongod_dockerfile(self):
+    def test_3818_ubuntu18_mongod_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu18 and mongod,
             check that mongo can reply with a hostInfo."""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -1953,7 +1953,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_531_centos7_lamp_stack(self):
+    def test_5107_centos7_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 7 with python2"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not _epel7: self.skipTest("epel7 is dead (use --epel7 to enable test)")
@@ -2018,7 +2018,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_532_centos8_lamp_stack(self):
+    def test_5108_centos8_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php on CentOs 8 with python3"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
@@ -2083,7 +2083,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_540_opensuse14_lamp_stack(self):
+    def test_5114_opensuse14_lamp_stack(self):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not _opensuse14: self.skipTest("Opensuse 42.x is dead")
@@ -2138,7 +2138,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_541_opensuse15_lamp_stack_php7(self):
+    def test_5115_opensuse15_lamp_stack_php7(self):
         """ Check setup of Linux/Apache/Mariadb/Php" on Opensuse later than 15.x"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
@@ -2193,7 +2193,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_607_centos7_simple_vault(self):
+    def test_6017_centos7_simple_vault(self):
         """ Check setup of Mock Vault in CentOS 7 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
@@ -2242,7 +2242,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_617_centos7_sssl_vault(self):
+    def test_6107_centos7_sssl_vault(self):
         """ Check setup of Mock Vault in CentOS 7 """
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         docker = _docker
@@ -2292,7 +2292,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_662_centos7_tomcat_dockerfile(self):
+    def test_6207_centos7_tomcat_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
@@ -2348,7 +2348,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     @unittest.expectedFailure
-    def test_663_centos8_tomcat_dockerfile(self):
+    def test_6208_centos8_tomcat_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
@@ -2403,7 +2403,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_665_centos7_tomcat_user_dockerfile(self):
+    def test_6307_centos7_tomcat_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an tomcat service 
                  being installed and enabled.
@@ -2463,7 +2463,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_672_centos7_cntlm_dockerfile(self):
+    def test_6407_centos7_cntlm_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
@@ -2518,7 +2518,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     @unittest.expectedFailure
-    def test_673_centos8_cntlm_dockerfile(self):
+    def test_6408_centos8_cntlm_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
@@ -2572,7 +2572,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_675_centos7_cntlm_user_dockerfile(self):
+    def test_6507_centos7_cntlm_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an cntlm service 
                  being installed and enabled.
@@ -2626,7 +2626,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_677_centos7_ssh_dockerfile(self):
+    def test_6607_centos7_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2688,7 +2688,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
         # logg.warning("the scp call will succeed only once - the sshd is dead after that")
-    def test_678_centos8_ssh_dockerfile(self):
+    def test_6608_centos8_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 8, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2757,7 +2757,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
         # logg.warning("the scp call will succeed only once - the sshd is dead after that")
-    def test_685_opensuse15_ssh_dockerfile(self):
+    def test_6615_opensuse15_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled OpenSuse 15, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2825,7 +2825,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         self.rm_testdir()
         # logg.warning("centos-sshd is incomplete without .socket support in systemctl.py")
         # logg.warning("the scp call will succeed only once - the sshd is dead after that")
-    def test_688_ubuntu18_ssh_dockerfile(self):
+    def test_6618_ubuntu18_ssh_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled Ubuntu 18, 
             THEN we can create an image with an ssh service 
                  being installed and enabled.
@@ -2892,7 +2892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
-    def test_847_centos_elasticsearch_setup(self):
+    def test_8407_centos_elasticsearch_setup(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
         # note that the test runs with a non-root 'ansible' user to reflect
         # a real deployment scenario using ansible in the non-docker world.
@@ -2980,7 +2980,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_857_centos7_elasticsearch_dockerfile(self):
+    def test_8507_centos7_elasticsearch_dockerfile(self):
         """ Check setup of ElasticSearch on CentOs via Dockerfile"""
         #### it depends on the download of the previous ansible test ####
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -3061,7 +3061,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
     @unittest.expectedFailure # can not find role in Ansible 2.9
-    def test_867_centos_elasticsearch_image(self):
+    def test_8607_centos_elasticsearch_image(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
@@ -3119,7 +3119,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_877_centos_elasticsearch_deploy(self):
+    def test_8707_centos_elasticsearch_deploy(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
@@ -3191,7 +3191,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_887_centos_elasticsearch_docker(self):
+    def test_8807_centos_elasticsearch_docker(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
@@ -3249,7 +3249,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rm --force {testname}"
         sh____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_897_centos_elasticsearch_docker_playbook(self):
+    def test_8907_centos_elasticsearch_docker_playbook(self):
         """ Check setup of ElasticSearch on CentOs via ansible playbook image"""
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
         if not os.path.exists(PLAYBOOK_TOOL): self.skipTest("ansible-playbook tools missing on host")
