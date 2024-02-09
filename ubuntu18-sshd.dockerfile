@@ -1,7 +1,7 @@
 FROM "ubuntu:18.04"
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.7106"
+      __version__="1.5.8065"
 ARG PASSWORD=P@ssw0rd.9d82fd2c7c83afb7d69213088203b6c6e402da0
 EXPOSE 22
 

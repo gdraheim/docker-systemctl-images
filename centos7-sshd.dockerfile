@@ -1,7 +1,7 @@
 FROM centos:7.9.2009
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.7106"
+      __version__="1.5.8065"
 ARG PASSWORD=P@ssw0rd.21a2dc7b77dacae44b050710903477400ca1c77fa9
 EXPOSE 22
 

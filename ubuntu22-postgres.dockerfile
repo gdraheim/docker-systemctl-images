@@ -1,7 +1,7 @@
 FROM "ubuntu:22.04"
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
-      __version__="1.5.7106"
+      __version__="1.5.8065"
 
 ENV PG /var/lib/postgresql/14/main
 ENV CNF_FILE /etc/postgresql/14/main/postgresql.conf
