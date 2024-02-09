@@ -43,9 +43,10 @@ _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/image"
-CENTOS = "centos:7.7.1908"
-UBUNTU = "ubuntu:14.04"
-OPENSUSE = "opensuse/leap:15.0"
+CENTOS7 = "centos:7.7.1908"
+CENTOS = "almalinux:9.1"
+UBUNTU = "ubuntu:22.04"
+OPENSUSE = "opensuse/leap:15.5"
 
 _curl = "curl"
 _curl_timeout4 = "--max-time 4"
@@ -2891,7 +2892,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         sx____(cmd.format(**locals()))
         self.rm_testdir()
 
-    def test_850_centos_elasticsearch_setup(self):
+    def test_847_centos_elasticsearch_setup(self):
         """ Check setup of ElasticSearch on CentOs via ansible docker connection"""
         # note that the test runs with a non-root 'ansible' user to reflect
         # a real deployment scenario using ansible in the non-docker world.
@@ -2905,7 +2906,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         setupfile = "centos7-elasticsearch-setup.yml"
         savename = docname(setupfile)
-        basename = CENTOS
+        basename = CENTOS7
         saveto = SAVETO
         images = IMAGES
         image = self.local_image(basename)
@@ -2913,6 +2914,8 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rm --force {testname}"
         sx____(cmd.format(**locals()))
         cmd = "{docker} run -d --name {testname} {image} sleep infinity"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} exec {testname} bash -c 'echo sslverify=false >> /etc/yum.conf'" # almalinux https
         sh____(cmd.format(**locals()))
         prepare = " --limit {testname} -e ansible_user=root"
         cmd = "ansible-playbook -i centos7-elasticsearch-setup.ini ansible-deployment-user.yml -vv" + prepare
@@ -2977,7 +2980,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
-    def test_855_centos7_elasticsearch_dockerfile(self):
+    def test_857_centos7_elasticsearch_dockerfile(self):
         """ Check setup of ElasticSearch on CentOs via Dockerfile"""
         #### it depends on the download of the previous ansible test ####
         if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
@@ -3069,7 +3072,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         playbook = "centos7-elasticsearch-image.yml"
-        basename = CENTOS  # "centos:7.3.1611"
+        basename = CENTOS7  # "centos:7.3.1611"
         tagrepo = SAVETO
         tagname = "elasticsearch"
         #
@@ -3128,7 +3131,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testdir = self.testdir()
         playbook = "centos7-elasticsearch-deploy.yml"
         savename = docname(playbook)
-        basename = CENTOS
+        basename = CENTOS7
         saveto = SAVETO
         images = IMAGES
         image = self.local_image(basename)
@@ -3199,7 +3202,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         playbook = "centos7-elasticsearch-docker.yml"
-        basename = CENTOS  # "centos:7.3.1611"
+        basename = CENTOS7  # "centos:7.3.1611"
         tagrepo = SAVETO
         tagname = "elasticsearch"
         #
@@ -3257,7 +3260,7 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         testname = self.testname()
         testdir = self.testdir()
         playbook = "centos7-elasticsearch.docker.yml"
-        basename = CENTOS  # "centos:7.3.1611"
+        basename = CENTOS7  # "centos:7.3.1611"
         tagrepo = SAVETO
         tagname = "elasticsearch"
         #
