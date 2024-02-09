@@ -43,7 +43,7 @@ _top_list = "ps -eo etime,pid,ppid,args --sort etime,pid"
 
 SAVETO = "localhost:5000/systemctl"
 IMAGES = "localhost:5000/systemctl/image"
-CENTOS7 = "centos:7.7.1908"
+CENTOS7 = "centos:7.9.2009"
 CENTOS = "almalinux:9.1"
 UBUNTU = "ubuntu:22.04"
 OPENSUSE = "opensuse/leap:15.5"
