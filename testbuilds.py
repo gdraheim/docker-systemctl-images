@@ -482,6 +482,57 @@ class DockerSystemctlReplacementTest(unittest.TestCase):
         cmd = "{docker} rmi {images}:{testname}"
         sx____(cmd.format(**locals()))
         self.rm_testdir()
+    def test_2009_centos9_httpd_dockerfile(self):
+        """ WHEN using a dockerfile for systemd-enabled AlmaLinux 9 and python3, 
+            THEN we can create an image with an Apache HTTP service 
+                 being installed and enabled.
+            Without a special startup.sh script or container-cmd 
+            one can just start the image and in the container
+            expecting that the service is started. Therefore,
+            WHEN we start the image as a docker container
+            THEN we can download the root html showing 'OK'
+            because the test script has placed an index.html
+            in the webserver containing that text. """
+        if not os.path.exists(DOCKER_SOCKET): self.skipTest("docker-based test")
+        docker = _docker
+        curl = _curl
+        python = _python or _python3
+        if not python.endswith("python3"): self.skipTest("using python3 on centos:9")
+        testname = self.testname()
+        testdir = self.testdir()
+        name = "centos9-httpd"
+        dockerfile = "centos9-httpd.dockerfile"
+        addhosts = self.local_addhosts(dockerfile)
+        savename = docname(dockerfile)
+        saveto = SAVETO
+        images = IMAGES
+        # WHEN
+        cmd = "{docker} build . -f {dockerfile} {addhosts} --tag {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} run -d --name {testname} {images}:{testname}"
+        sh____(cmd.format(**locals()))
+        container = self.ip_container(testname)
+        # THEN
+        cmd = "sleep 5; {curl} -o {testdir}/{testname}.txt http://{container}"
+        sh____(cmd.format(**locals()))
+        cmd = "grep OK {testdir}/{testname}.txt"
+        sh____(cmd.format(**locals()))
+        #cmd = "{docker} cp {testname}:/var/log/systemctl.log {testdir}/systemctl.log"
+        # sh____(cmd.format(**locals()))
+        # SAVE
+        cmd = "{docker} stop {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rm --force {testname}"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {saveto}/{savename}:latest"
+        sx____(cmd.format(**locals()))
+        cmd = "{docker} tag {images}:{testname} {saveto}/{savename}:latest"
+        sh____(cmd.format(**locals()))
+        cmd = "{docker} rmi {images}:{testname}"
+        sx____(cmd.format(**locals()))
+        self.rm_testdir()
     def test_2047_centos7_httpd_not_user_dockerfile(self):
         """ WHEN using a dockerfile for systemd-enabled CentOS 7 and python2, 
             THEN we can create an image with an Apache HTTP service 
