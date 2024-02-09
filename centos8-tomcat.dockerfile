@@ -1,4 +1,4 @@
-FROM centos:8.1.1911
+FROM centos:8.5.2111
 
 ###################################################################
 ### WARNING: tomcat-webapps was removed from CENTOS 8 (07/2020) ###

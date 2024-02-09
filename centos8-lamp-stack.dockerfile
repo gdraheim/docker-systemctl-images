@@ -1,4 +1,4 @@
-FROM centos:8.1.1911
+FROM centos:8.5.2111
 
 ###############################################################################
 ### WARNING: the phpmyadmin package has not been ported to EPEL 8 (07/2020) ###

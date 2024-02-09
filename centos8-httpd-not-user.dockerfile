@@ -1,4 +1,4 @@
-FROM centos:8.1.1911
+FROM centos:8.5.2111
 
 LABEL __copyright__="(C) Guido Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
