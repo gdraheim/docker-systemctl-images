@@ -1,4 +1,4 @@
-FROM centos:8.5.2111
+FROM almalinux:9.3
 
 ###################################################################
 ### WARNING: tomcat-webapps was removed from CENTOS 8 (07/2020) ###
@@ -9,9 +9,9 @@ LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
 EXPOSE 8080
 
 COPY files/docker/systemctl3.py /usr/bin/systemctl
-RUN sed -i -e "s|/usr/bin/python3|/usr/libexec/platform-python|" /usr/bin/systemctl
+RUN echo sslverify=false >> /etc/yum.conf
 # RUN yum install -y dnf-plugins-core
-# RUN yum config-manager --set-enabled PowerTools
+# RUN yum config-manager --set-enabled crb # instead of PowerTools
 # RUN yum install -y epel-release
 # RUN yum repolist
 

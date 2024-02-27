@@ -1,4 +1,4 @@
-FROM centos:8.5.2111
+FROM almalinux:9.3
 
 LABEL __copyright__="(C) Guido U. Draheim, licensed under the EUPL" \
       __version__="1.5.8065"
@@ -13,9 +13,8 @@ ARG ALLOWS=0.0.0.0/0
 EXPOSE 5432
 
 COPY files/docker/systemctl3.py /usr/bin/systemctl3.py
-RUN sed -i -e "s|/usr/bin/python3|/usr/libexec/platform-python|" /usr/bin/systemctl3.py
-
 RUN cp /usr/bin/systemctl3.py /usr/bin/systemctl
+RUN echo sslverify=false >> /etc/yum.conf
 RUN yum install -y postgresql-server postgresql-contrib
 RUN cp /usr/bin/systemctl3.py /usr/bin/systemctl
 
